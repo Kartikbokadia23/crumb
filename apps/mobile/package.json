@@ -1,0 +1,36 @@
+{
+  "name": "@crumb/mobile",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "ANDROID_HOME=/opt/homebrew/share/android-commandlinetools JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home PATH=/opt/homebrew/share/android-commandlinetools/platform-tools:/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home/bin:$PATH expo run:android",
+    "ios": "expo run:ios",
+    "prebuild": "expo prebuild",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crumb/core": "*",
+    "@crumb/splitwise": "*",
+    "@crumb/storage": "*",
+    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-navigation/native": "^7.0.0",
+    "@react-navigation/native-stack": "^7.0.0",
+    "expo": "~54.0.0",
+    "expo-constants": "~17.1.0",
+    "expo-linking": "~7.1.0",
+    "expo-secure-store": "~14.2.0",
+    "expo-status-bar": "~2.2.0",
+    "expo-web-browser": "~14.1.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-safe-area-context": "~5.6.0",
+    "react-native-screens": "~4.16.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.0",
+    "babel-plugin-module-resolver": "^5.0.0",
+    "typescript": "~5.8.0",
+    "@types/react": "~19.1.0"
+  }
+}

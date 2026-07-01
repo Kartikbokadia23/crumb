@@ -1,0 +1,11 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@crumb/core": ["../../packages/core/src/index.ts"],
+      "@crumb/storage": ["../../packages/storage/src/index.ts"],
+      "@crumb/splitwise": ["../../packages/splitwise/src/index.ts"]
+    }
+  }
+}
