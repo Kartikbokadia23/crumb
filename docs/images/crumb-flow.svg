@@ -1,0 +1,28 @@
+<svg width="1200" height="420" viewBox="0 0 1200 420" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Crumb workflow</title>
+  <desc id="desc">Crumb captures alerts, parses transactions, asks for review, and posts to Splitwise.</desc>
+  <rect width="1200" height="420" rx="32" fill="#FBFAF7"/>
+  <rect x="70" y="84" width="218" height="210" rx="26" fill="#F0B35A"/>
+  <rect x="342" y="84" width="218" height="210" rx="26" fill="#E7F3ED"/>
+  <rect x="614" y="84" width="218" height="210" rx="26" fill="#15231E"/>
+  <rect x="886" y="84" width="218" height="210" rx="26" fill="#DCE9FF"/>
+  <text x="106" y="148" fill="#342514" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">Capture</text>
+  <text x="106" y="188" fill="#5F4421" font-family="Inter, Arial, sans-serif" font-size="19">Android listener or</text>
+  <text x="106" y="218" fill="#5F4421" font-family="Inter, Arial, sans-serif" font-size="19">iOS Shortcut relay</text>
+  <text x="378" y="148" fill="#15231E" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">Parse</text>
+  <text x="378" y="188" fill="#4B6258" font-family="Inter, Arial, sans-serif" font-size="19">Merchant, amount,</text>
+  <text x="378" y="218" fill="#4B6258" font-family="Inter, Arial, sans-serif" font-size="19">card and source</text>
+  <text x="650" y="148" fill="#F7F4EE" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">Review</text>
+  <text x="650" y="188" fill="#C8D8CE" font-family="Inter, Arial, sans-serif" font-size="19">Drafts stay local</text>
+  <text x="650" y="218" fill="#C8D8CE" font-family="Inter, Arial, sans-serif" font-size="19">until confirmed</text>
+  <text x="922" y="148" fill="#15233D" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="800">Split</text>
+  <text x="922" y="188" fill="#475B7D" font-family="Inter, Arial, sans-serif" font-size="19">Create clean</text>
+  <text x="922" y="218" fill="#475B7D" font-family="Inter, Arial, sans-serif" font-size="19">Splitwise expenses</text>
+  <path d="M304 188H326" stroke="#77847E" stroke-width="7" stroke-linecap="round"/>
+  <path d="M310 168L330 188L310 208" stroke="#77847E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M576 188H598" stroke="#77847E" stroke-width="7" stroke-linecap="round"/>
+  <path d="M582 168L602 188L582 208" stroke="#77847E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M848 188H870" stroke="#77847E" stroke-width="7" stroke-linecap="round"/>
+  <path d="M854 168L874 188L854 208" stroke="#77847E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="70" y="350" fill="#4F5F57" font-family="Inter, Arial, sans-serif" font-size="22" font-weight="600">Designed for real shared spending: groceries, food orders, household runs, and the tiny payments everyone forgets to split.</text>
+</svg>

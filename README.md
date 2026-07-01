@@ -1,23 +1,62 @@
 # Crumb
 
-Crumb turns grocery and food payment alerts into reviewed Splitwise expenses.
+**Crumb catches shared expenses from payment alerts and turns them into reviewed Splitwise drafts.**
 
-The repo has two tracks:
+Most shared expenses are not missed because people do not care. They are missed because the moment passes: a grocery order arrives, someone pays for dinner, a card notification disappears, and the Splitwise entry never gets made. Crumb closes that gap.
 
-- a native Android MVP that reads payment notifications directly with a notification listener
-- an Expo React Native app with iOS support, where iOS intake is driven by Messages automation/Shortcuts because iOS does not allow normal apps to read other apps' notifications
+![Crumb product preview](docs/images/crumb-hero.svg)
 
-Crumb never posts automatically from a raw alert. Alerts become local drafts first; the user reviews a draft before creating the Splitwise expense.
+## Why Crumb
 
-## What Works
+Crumb is built for the everyday spending that quietly creates roommate and group-accounting friction:
 
-- Parses Indian payment alerts from HDFC, ICICI, Pluxee, Blinkit, Swiggy, Instamart, Zepto, Zomato-style text.
-- Stores de-duplicated transaction drafts locally.
-- Connects to Splitwise with OAuth 2.0.
+- groceries ordered from Blinkit, Instamart, Zepto, or local stores
+- food orders from Swiggy, Zomato, and similar merchants
+- shared household runs paid through cards, wallets, or meal cards
+- payment alerts from Indian banks and issuers such as HDFC, ICICI, and Pluxee
+
+Instead of asking users to manually remember every transaction, Crumb listens for the payment signal, extracts the useful details, and creates a draft that can be reviewed before posting to Splitwise.
+
+## How It Works
+
+![Crumb workflow](docs/images/crumb-flow.svg)
+
+1. Crumb captures a payment alert.
+2. The parser extracts merchant, amount, source, and transaction context.
+3. A local draft is created and de-duplicated.
+4. The user reviews the draft.
+5. Crumb creates the Splitwise expense only after confirmation.
+
+Crumb is intentionally review-first. It does not blindly post raw alerts to Splitwise.
+
+## What Works Today
+
+- Parses realistic Indian payment alerts from HDFC, ICICI, Pluxee, Blinkit, Swiggy, Instamart, Zepto, and Zomato-style messages.
+- Creates local transaction drafts with duplicate protection.
+- Connects to Splitwise using OAuth 2.0.
 - Fetches the current Splitwise user and groups.
-- Creates equal-split Splitwise expenses after confirmation.
-- Provides a debug Mock Bank Android app for replaying realistic notifications.
-- Supports iOS draft import through a Shortcut/Automation relay plus in-app review notifications.
+- Creates equal-split Splitwise expenses after user confirmation.
+- Provides a native Android notification-listener MVP.
+- Provides an Expo React Native app for Android and iOS review flows.
+- Supports iOS intake through Shortcuts/Automation relay because iOS does not allow normal apps to read other apps' notifications.
+- Includes a Mock Bank Android app for testing realistic notifications end to end.
+
+## Platform Strategy
+
+### Android
+
+Android is the direct path. Crumb can use a notification listener to detect payment alerts, parse them locally, and surface review actions.
+
+### iOS
+
+iOS is more constrained. Apps cannot passively read SMS or bank-app notifications. Crumb handles this with a practical automation-based flow:
+
+- a personal Shortcuts Automation matches bank/payment messages
+- the Shortcut forwards the message body to a relay topic
+- Crumb imports the relayed candidate, parses it, and creates a local draft
+- the user reviews the draft before posting to Splitwise
+
+The repo also contains an iOS Message Filter extension, but the Shortcuts path is the most practical setup for real-world use.
 
 ## Repo Layout
 
@@ -30,11 +69,20 @@ packages/storage/     Local draft repository
 packages/splitwise/   Splitwise OAuth/API client
 shared/               JSON contracts and parser fixtures
 scripts/              Android dev-loop helpers
+docs/images/          README visuals
 ```
 
-## Android
+## Quick Start
 
-Android is the straightforward path because Crumb can use a notification listener.
+Install Java 21 and Android tooling, then from the repo root:
+
+```bash
+npm install
+npm run typecheck
+JAVA_HOME=/opt/homebrew/opt/openjdk@21 ./gradlew testDebugUnitTest
+```
+
+## Android Development
 
 ### Emulator
 
@@ -54,7 +102,7 @@ Android is the straightforward path because Crumb can use a notification listene
 ./scripts/dev-phone.sh
 ```
 
-The dev loop builds Crumb and Mock Bank, installs both APKs, enables what Android allows through adb, launches Crumb, and can send a sample Blinkit alert.
+The dev loop builds Crumb and Mock Bank, installs both APKs, launches Crumb, and can send a sample Blinkit alert.
 
 Useful commands:
 
@@ -84,17 +132,9 @@ app/build/outputs/apk/debug/app-debug.apk
 mockbank/build/outputs/apk/debug/mockbank-debug.apk
 ```
 
-## iOS
+## iOS Shortcut Setup
 
-iOS cannot let Crumb passively read bank app notifications. The working path is:
-
-1. A personal Automation in Shortcuts is triggered by matching Messages/SMS text from bank senders.
-2. The Shortcut posts the SMS body and sender to the configured relay topic.
-3. Crumb polls the relay, parses matching messages, stores drafts, and shows a local notification with Review/Ignore actions.
-
-### Shortcut / Automation Setup
-
-Create a Shortcut action that sends a JSON body to the relay:
+Create a Shortcut that sends a JSON body to the relay:
 
 ```json
 {
@@ -118,8 +158,6 @@ Then create a personal Automation:
 5. Disable confirmation prompts where iOS allows it.
 
 In the app, iOS imports relayed candidates through `apps/mobile/src/services/ntfyImportService.ts`, parses them with the shared draft flow, and schedules local draft notifications through the native iOS bridge.
-
-There is also an iOS Message Filter extension in `apps/mobile/ios/CrumbMessageFilterExtension`. It can parse and store matching SMS drafts through the shared app group/keychain path, but iOS message filtering behavior depends on system settings and entitlement/provisioning, so the Shortcuts automation path is the practical setup.
 
 Run the Expo app:
 
@@ -156,7 +194,7 @@ Splitwise developer app callback URL:
 crumb://splitwise-auth
 ```
 
-## Checks
+## Quality Checks
 
 ```bash
 npm run typecheck
@@ -164,4 +202,6 @@ npm test
 JAVA_HOME=/opt/homebrew/opt/openjdk@21 ./gradlew testDebugUnitTest
 ```
 
-Use the narrowest check for the code you touched while developing.
+## Product Direction
+
+Crumb is aimed at becoming the quiet layer between real-world spending and shared-expense bookkeeping. The near-term path is better merchant coverage, richer draft review, smarter group/member suggestions, and a smoother iOS automation onboarding flow.

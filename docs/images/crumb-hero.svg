@@ -1,0 +1,30 @@
+<svg width="1200" height="720" viewBox="0 0 1200 720" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Crumb product preview</title>
+  <desc id="desc">Payment alerts becoming reviewed Splitwise drafts inside Crumb.</desc>
+  <rect width="1200" height="720" rx="40" fill="#F7F4EE"/>
+  <rect x="72" y="72" width="1056" height="576" rx="36" fill="#15231E"/>
+  <circle cx="1002" cy="132" r="42" fill="#F0B35A"/>
+  <circle cx="1060" cy="190" r="18" fill="#8FD0B1"/>
+  <path d="M132 488C226 438 323 440 424 488C535 541 638 542 734 488C838 430 930 430 1068 492V648H132V488Z" fill="#213A31"/>
+  <text x="132" y="166" fill="#F7F4EE" font-family="Inter, Arial, sans-serif" font-size="68" font-weight="800">Crumb</text>
+  <text x="132" y="218" fill="#C8D8CE" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="500">From payment alert to Splitwise expense, without the awkward follow-up.</text>
+  <rect x="132" y="282" width="310" height="118" rx="24" fill="#F7F4EE"/>
+  <text x="160" y="326" fill="#26332D" font-family="Inter, Arial, sans-serif" font-size="18" font-weight="700">Bank alert</text>
+  <text x="160" y="361" fill="#4F5F57" font-family="Inter, Arial, sans-serif" font-size="18">Rs. 842 spent at Blinkit</text>
+  <text x="160" y="388" fill="#4F5F57" font-family="Inter, Arial, sans-serif" font-size="18">Card ending 2194</text>
+  <path d="M472 338H564" stroke="#8FD0B1" stroke-width="8" stroke-linecap="round"/>
+  <path d="M540 314L564 338L540 362" stroke="#8FD0B1" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="602" y="158" width="330" height="488" rx="42" fill="#0D1512" stroke="#32483F" stroke-width="4"/>
+  <rect x="626" y="194" width="282" height="416" rx="28" fill="#FDFBF7"/>
+  <rect x="660" y="230" width="130" height="12" rx="6" fill="#D9E2DD"/>
+  <text x="660" y="285" fill="#15231E" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="800">Review draft</text>
+  <rect x="660" y="320" width="214" height="92" rx="18" fill="#EDF6F1"/>
+  <text x="682" y="354" fill="#15231E" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700">Blinkit</text>
+  <text x="682" y="386" fill="#4F5F57" font-family="Inter, Arial, sans-serif" font-size="18">Rs. 842.00</text>
+  <rect x="660" y="436" width="214" height="48" rx="14" fill="#15231E"/>
+  <text x="703" y="468" fill="#F7F4EE" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700">Add to Splitwise</text>
+  <rect x="660" y="500" width="214" height="48" rx="14" fill="#F2E6D3"/>
+  <text x="724" y="532" fill="#5D4A2F" font-family="Inter, Arial, sans-serif" font-size="17" font-weight="700">Ignore</text>
+  <rect x="960" y="304" width="98" height="98" rx="28" fill="#8FD0B1"/>
+  <path d="M990 356L1006 372L1032 336" stroke="#15231E" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
