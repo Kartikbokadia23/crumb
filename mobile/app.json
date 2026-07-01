@@ -1,0 +1,17 @@
+{
+  "expo": {
+    "name": "Crumb",
+    "slug": "crumb",
+    "scheme": "crumb",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "bundleIdentifier": "com.crumb.app"
+    },
+    "android": {
+      "package": "com.crumb.app"
+    }
+  }
+}

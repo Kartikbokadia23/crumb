@@ -1,0 +1,58 @@
+[
+  {
+    "alertId": "hdfc-card-instamart",
+    "merchant": "Instamart",
+    "amount": "459.00",
+    "confidence": "High",
+    "hasDatetime": true
+  },
+  {
+    "alertId": "hdfc-card-swiggy",
+    "merchant": "Swiggy",
+    "amount": "320.50",
+    "confidence": "High",
+    "hasDatetime": true
+  },
+  {
+    "alertId": "pluxee-blinkit",
+    "merchant": "Blinkit",
+    "amount": "899.00",
+    "confidence": "High",
+    "hasDatetime": true
+  },
+  {
+    "alertId": "pluxee-swiggy-inst",
+    "merchant": "Instamart",
+    "amount": "250.00",
+    "confidence": "High",
+    "hasDatetime": true
+  },
+  {
+    "alertId": "hdfc-upi-blinkit",
+    "merchant": "Blinkit",
+    "amount": "199.00",
+    "confidence": "Medium",
+    "hasDatetime": false
+  },
+  {
+    "alertId": "icici-blinkit",
+    "merchant": "Blinkit",
+    "amount": "549.00",
+    "confidence": "Medium",
+    "hasDatetime": false
+  },
+  {
+    "alertId": "hdfc-zepto",
+    "merchant": "Zepto",
+    "amount": "299.00",
+    "confidence": "High",
+    "hasDatetime": true
+  },
+  {
+    "alertId": "hdfc-zomato",
+    "merchant": "Zomato",
+    "amount": "499.00",
+    "confidence": "High",
+    "hasDatetime": true
+  }
+]

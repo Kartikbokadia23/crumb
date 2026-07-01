@@ -1,0 +1,21 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "TransactionDraft",
+  "description": "A draft expense created from a parsed transaction, awaiting user review",
+  "type": "object",
+  "required": ["id", "merchant", "amount", "sourceLabel", "confidence", "rawHash", "status", "platform", "ingestionSource", "createdAt"],
+  "additionalProperties": false,
+  "properties": {
+    "id": { "type": "string", "format": "uuid" },
+    "merchant": { "type": "string", "enum": ["Blinkit", "Instamart", "Swiggy", "Zomato", "Zepto", "Unknown"] },
+    "amount": { "type": "string", "pattern": "^\d+\.\d{2}$" },
+    "occurredAt": { "type": ["string", "null"] },
+    "sourceLabel": { "type": "string" },
+    "confidence": { "type": "string", "enum": ["High", "Medium", "Low"] },
+    "rawHash": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+    "status": { "type": "string", "enum": ["Pending", "Posted", "Ignored"] },
+    "platform": { "type": "string", "enum": ["android", "ios"] },
+    "ingestionSource": { "type": "string", "enum": ["notification", "sms_filter", "manual"] },
+    "createdAt": { "type": "string", "description": "ISO-8601 datetime" }
+  }
+}

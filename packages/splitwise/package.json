@@ -1,0 +1,16 @@
+{
+  "name": "@crumb/splitwise",
+  "version": "1.0.0",
+  "description": "Splitwise OAuth and API client for Crumb",
+  "main": "src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@crumb/core": "*"
+  },
+  "devDependencies": {
+    "typescript": "~5.3.3",
+    "@types/node": "^20.0.0"
+  }
+}

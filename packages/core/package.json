@@ -1,0 +1,23 @@
+{
+  "name": "@crumb/core",
+  "version": "1.0.0",
+  "description": "Core transaction parsing and domain logic for Crumb",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsc --watch"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.0.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.0.0",
+    "ts-jest": "^29.0.0",
+    "typescript": "~5.3.3"
+  },
+  "dependencies": {
+    "js-sha256": "^0.11.1"
+  }
+}
