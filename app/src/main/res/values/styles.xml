@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Flatwise" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#F7F2EA</item>
+        <item name="android:statusBarColor">#F7F2EA</item>
+        <item name="android:fontFamily">sans</item>
+    </style>
+</resources>
