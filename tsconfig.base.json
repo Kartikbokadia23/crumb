@@ -9,7 +9,13 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "baseUrl": ".",
+    "paths": {
+      "@crumb/core": ["packages/core/src/index.ts"],
+      "@crumb/storage": ["packages/storage/src/index.ts"],
+      "@crumb/splitwise": ["packages/splitwise/src/index.ts"]
+    }
   },
   "exclude": ["node_modules", "dist", "build"]
 }
