@@ -41,8 +41,7 @@ public class AppDelegate: ExpoAppDelegate, UNUserNotificationCenterDelegate {
     willPresent notification: UNNotification,
     withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
   ) {
-    // willPresent is only called when the app is foregrounded — background delivery is unaffected.
-    // Suppress the banner when the app is open: drafts are visible on-screen already.
+    // Suppress banner when foregrounded — drafts are already visible on-screen.
     completionHandler([])
   }
 
