@@ -9,36 +9,28 @@ import com.flatwise.app.parser.TransactionAlertParser
 import java.util.Collections
 
 class FlatwiseNotificationListener : NotificationListenerService() {
-    // Track processed notification keys to prevent double-firing.
-    // Two sources of duplicates:
-    //   1. onListenerConnected + onNotificationPosted both fire for the same SBN when the listener first binds.
-    //   2. Payment apps update their existing notification (e.g., appending balance), which re-posts
-    //      the same key with a different text → new rawHash → second Crumb notification.
-    // Using the SBN key (package+tag+id) as the dedup unit so updates to the same notification slot
-    // are ignored until it is removed and a genuinely new notification occupies that slot.
+    // onListenerConnected + onNotificationPosted both fire for active SBNs when the listener binds,
+    // and bank apps update their notification (appending balance) which re-posts the same key with
+    // slightly different text → new rawHash → duplicate Crumb notification. Track by SBN key so
+    // updates to the same slot are ignored until the notification is removed.
     private val seenKeys = Collections.synchronizedSet(mutableSetOf<String>())
 
     override fun onListenerConnected() {
         Log.d(TAG, "Notification listener connected")
         seenKeys.clear()
         activeNotifications.orEmpty().forEach { sbn ->
-            // Only track allowed sources in seenKeys to keep it clean.
             if (isAllowedSource(sbn.packageName)) seenKeys.add(sbn.key)
-            // Always attempt processing; repository rawHash dedup prevents duplicate storage
-            // for notifications that were already persisted in a prior session.
             processNotification(sbn)
         }
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         if (!isAllowedSource(sbn.packageName)) return
-        // seenKeys.add() returns false when the key is already present — skip re-processing.
         if (!seenKeys.add(sbn.key)) return
         processNotification(sbn)
     }
 
     override fun onNotificationRemoved(sbn: StatusBarNotification) {
-        // Clear the key so a genuinely new notification in the same app slot is processed normally.
         seenKeys.remove(sbn.key)
     }
 
@@ -79,11 +71,7 @@ class FlatwiseNotificationListener : NotificationListenerService() {
             .ifBlank { "Notification" }
     }
 
-    // Only listen to SMS/messaging apps. Payment alert SMSes arrive via these apps;
-    // watching all apps was reading unrelated notifications (social, email, etc.).
-    private fun isAllowedSource(packageName: String): Boolean {
-        return ALLOWED_PACKAGES.any { packageName.startsWith(it) }
-    }
+    private fun isAllowedSource(packageName: String): Boolean = packageName in ALLOWED_PACKAGES
 
     private companion object {
         const val TAG = "FlatwiseListener"
