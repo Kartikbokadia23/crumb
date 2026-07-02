@@ -14,7 +14,9 @@ class ReceiptActionReceiver : BroadcastReceiver() {
         when (intent.action) {
             ReceiptNotificationCenter.ACTION_IGNORE -> {
                 AppContainer.repository.ignore(candidateId)
-                ReceiptNotificationCenter.cancelReceipt(context, candidateId)
+                AppContainer.repository.candidate(candidateId)?.let {
+                    ReceiptNotificationCenter.cancelReceipt(context, it)
+                }
             }
             ReceiptNotificationCenter.ACTION_POST -> postCandidate(context.applicationContext, candidateId)
         }
@@ -25,14 +27,11 @@ class ReceiptActionReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val candidate = AppContainer.repository.candidate(candidateId)
-                if (candidate == null) {
-                    ReceiptNotificationCenter.cancelReceipt(context, candidateId)
-                    return@launch
-                }
+                if (candidate == null) return@launch
                 runCatching { AppContainer.splitwiseAuthRepository.createExpense(candidate) }
                     .onSuccess {
                         AppContainer.repository.markPosted(candidateId)
-                        ReceiptNotificationCenter.cancelReceipt(context, candidateId)
+                        ReceiptNotificationCenter.cancelReceipt(context, candidate)
                         ReceiptNotificationCenter.showStatus(
                             context,
                             "Added to Splitwise",

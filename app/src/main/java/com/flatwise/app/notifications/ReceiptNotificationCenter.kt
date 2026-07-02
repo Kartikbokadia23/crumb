@@ -84,8 +84,8 @@ object ReceiptNotificationCenter {
         NotificationManagerCompat.from(context).notify(STATUS_NOTIFICATION_ID, notification)
     }
 
-    fun cancelReceipt(context: Context, candidateId: String) {
-        NotificationManagerCompat.from(context).cancel(candidateId.notificationId())
+    fun cancelReceipt(context: Context, candidate: TransactionCandidate) {
+        NotificationManagerCompat.from(context).cancel(candidate.notificationId())
     }
 
     private fun actionIntent(context: Context, action: String, candidateId: String): PendingIntent {
@@ -118,7 +118,8 @@ object ReceiptNotificationCenter {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun TransactionCandidate.notificationId(): Int = id.notificationId()
-
-    private fun String.notificationId(): Int = RECEIPT_BASE_ID + hashCode().mod(10_000)
+    // Keyed on rawHash so a bank-app notification update (same transaction, slightly different text)
+    // replaces the existing Crumb notification instead of stacking a duplicate.
+    private fun TransactionCandidate.notificationId(): Int =
+        RECEIPT_BASE_ID + rawHash.hashCode().mod(10_000)
 }
