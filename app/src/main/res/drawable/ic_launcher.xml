@@ -7,13 +7,6 @@
     <path
         android:fillColor="#161310"
         android:pathData="M0,0h108v108h-108z" />
-    <!--
-        Bold "C" glyph in brand amber (#F6C45F).
-        Outer radius 30, inner radius 18, centre (54,54).
-        Opening faces right (~±30° from horizontal) so the letter reads clearly at small sizes.
-        Path: outer arc CCW from top-right gap to bottom-right gap, straight across to inner arc,
-        then CW back to close the counter.
-    -->
     <path
         android:fillColor="#F6C45F"
         android:pathData="M80,39 A30,30 0 1,0 80,69 L70,63 A18,18 0 1,1 70,45 Z" />
