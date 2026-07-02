@@ -14,11 +14,8 @@ class ReceiptActionReceiver : BroadcastReceiver() {
         when (intent.action) {
             ReceiptNotificationCenter.ACTION_IGNORE -> {
                 AppContainer.repository.ignore(candidateId)
-                // Look up the candidate after marking ignored (it still exists, status just changed).
-                // cancelReceipt needs the candidate to derive the rawHash-based notification ID.
-                val candidate = AppContainer.repository.candidate(candidateId)
-                if (candidate != null) {
-                    ReceiptNotificationCenter.cancelReceipt(context, candidate)
+                AppContainer.repository.candidate(candidateId)?.let {
+                    ReceiptNotificationCenter.cancelReceipt(context, it)
                 }
             }
             ReceiptNotificationCenter.ACTION_POST -> postCandidate(context.applicationContext, candidateId)
@@ -30,11 +27,7 @@ class ReceiptActionReceiver : BroadcastReceiver() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val candidate = AppContainer.repository.candidate(candidateId)
-                if (candidate == null) {
-                    // rawHash is unavailable without the candidate — the notification will
-                    // auto-dismiss or was already cleared; nothing to cancel here.
-                    return@launch
-                }
+                if (candidate == null) return@launch
                 runCatching { AppContainer.splitwiseAuthRepository.createExpense(candidate) }
                     .onSuccess {
                         AppContainer.repository.markPosted(candidateId)

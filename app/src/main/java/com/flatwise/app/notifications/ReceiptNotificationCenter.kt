@@ -118,8 +118,8 @@ object ReceiptNotificationCenter {
             ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     }
 
-    // Deterministic from rawHash so that if two candidates share the same raw content,
-    // the second notify() call replaces the first rather than stacking a duplicate.
+    // Keyed on rawHash so a bank-app notification update (same transaction, slightly different text)
+    // replaces the existing Crumb notification instead of stacking a duplicate.
     private fun TransactionCandidate.notificationId(): Int =
         RECEIPT_BASE_ID + rawHash.hashCode().mod(10_000)
 }
