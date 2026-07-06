@@ -3,7 +3,7 @@ import { Merchant } from '../models/ParsedTransaction'
 export const MERCHANT_ALIASES: Record<Merchant, string[]> = {
   Blinkit: ['blinkit', 'blnkit', 'grofers'],
   Instamart: ['instamart', 'swiggy inst', 'swiggy instamart'],
-  Swiggy: ['swiggy food', 'bundl technologies', 'bundl'],
+  Swiggy: ['swiggy food', 'swiggy', 'bundl technologies', 'bundl'],
   Zomato: ['zomato', 'eternal'],
   Zepto: ['zepto'],
   Unknown: [],

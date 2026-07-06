@@ -37,6 +37,36 @@ describe('parseTransactionAlert', () => {
     expect(result!.occurredAt).toBe('2024-01-15T19:20:00')
   })
 
+  test('plain swiggy alias parses as Swiggy', () => {
+    const result = parseTransactionAlert(
+      'HDFC Bank: Rs.320.50 spent at SWIGGY on 2024-01-15 19:20:00.',
+      'hdfc-card',
+    )
+    expect(result).not.toBeNull()
+    expect(result!.merchant).toBe('Swiggy')
+    expect(result!.amount).toBe('320.50')
+  })
+
+  test('iOS sender label can identify Swiggy when body omits merchant', () => {
+    const result = parseTransactionAlert(
+      'Paid Rs.320.50 successfully on 2024-01-15 19:20:00.',
+      'SWIGGY',
+    )
+    expect(result).not.toBeNull()
+    expect(result!.merchant).toBe('Swiggy')
+    expect(result!.amount).toBe('320.50')
+  })
+
+  test('iOS sender label can identify Instamart when body omits merchant', () => {
+    const result = parseTransactionAlert(
+      'Paid Rs.459.00 successfully on 2024-01-15 14:30:00.',
+      'INSTAMART',
+    )
+    expect(result).not.toBeNull()
+    expect(result!.merchant).toBe('Instamart')
+    expect(result!.amount).toBe('459.00')
+  })
+
   test('pluxee-blinkit: merchant Blinkit, amount 899.00, confidence High (Pluxee format)', () => {
     const result = parseTransactionAlert(ALERTS['pluxee-blinkit'], 'pluxee')
     expect(result).not.toBeNull()

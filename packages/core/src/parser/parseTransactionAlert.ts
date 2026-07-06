@@ -89,7 +89,7 @@ function computeRawHash(text: string): string {
 }
 
 export function parseTransactionAlert(text: string, sourceLabel: string): ParsedTransaction | null {
-  const merchant = detectMerchant(text)
+  const merchant = detectMerchant(`${text}\n${sourceLabel}`)
   if (merchant === 'Unknown') return null
 
   const amount = extractAmount(text)
