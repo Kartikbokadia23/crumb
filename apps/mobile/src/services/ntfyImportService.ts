@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 // Free, no-signup relay: the Shortcut on the phone POSTs matched SMS text here,
 // and the app polls it instead of foregrounding via a URL scheme (which iOS
 // always blocks with a confirmation prompt when triggered by an automation).
-const NTFY_TOPIC = 'crumb-sms-e33498fb9851'
+const NTFY_TOPIC = 'crumb-sms-e33498fb9852'
 const NTFY_POLL_URL = `https://ntfy.sh/${NTFY_TOPIC}/json?poll=1`
 const LAST_ID_KEY = 'crumb_ntfy_last_id'
 

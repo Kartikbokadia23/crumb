@@ -1,4 +1,4 @@
-export type Merchant = 'Blinkit' | 'Instamart' | 'Swiggy' | 'Zomato' | 'Zepto' | 'Unknown'
+export type Merchant = 'Blinkit' | 'Instamart' | 'Swiggy' | 'Zomato' | 'Zepto' | 'Amazon' | 'Unknown'
 export type Confidence = 'High' | 'Medium' | 'Low'
 
 export interface ParsedTransaction {

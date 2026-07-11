@@ -6,6 +6,7 @@ export const MERCHANT_ALIASES: Record<Merchant, string[]> = {
   Swiggy: ['swiggy food', 'swiggy', 'bundl technologies', 'bundl'],
   Zomato: ['zomato', 'eternal'],
   Zepto: ['zepto'],
+  Amazon: ['amazonpaygrocery', 'amazonselle'],
   Unknown: [],
 }
 
