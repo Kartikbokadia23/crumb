@@ -6,6 +6,12 @@ import type {
   SplitwiseExpenseResult,
 } from './SplitwiseModels'
 
+export type SplitwiseExpenseUserShare = {
+  userId: number
+  paidShare: string
+  owedShare: string
+}
+
 export class SplitwiseClient {
   private readonly baseUrl = 'https://secure.splitwise.com/api/v3.0'
   private readonly tokenUrl = 'https://secure.splitwise.com/oauth/token'
@@ -54,6 +60,29 @@ export class SplitwiseClient {
       },
       accessToken,
     )
+  }
+
+  async createCustomEqualExpense(
+    accessToken: string,
+    groupId: number,
+    description: string,
+    cost: string,
+    users: SplitwiseExpenseUserShare[],
+  ): Promise<SplitwiseExpenseResult> {
+    const body: Record<string, string | number | boolean> = {
+      description,
+      cost,
+      group_id: groupId,
+      currency_code: 'INR',
+    }
+
+    users.forEach((user, index) => {
+      body[`users__${index}__user_id`] = user.userId
+      body[`users__${index}__paid_share`] = user.paidShare
+      body[`users__${index}__owed_share`] = user.owedShare
+    })
+
+    return this.post<SplitwiseExpenseResult>('/create_expense', body, accessToken)
   }
 
   private async get<T>(path: string, accessToken: string): Promise<T> {

@@ -9,6 +9,7 @@ import {
   Linking,
   Platform,
 } from 'react-native'
+import * as Clipboard from 'expo-clipboard'
 import Constants from 'expo-constants'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Colors } from '../theme/colors'
@@ -17,6 +18,11 @@ import { Typography } from '../theme/typography'
 import { useStorage } from '../context/StorageContext'
 import { useSplitwiseContext } from '../context/SplitwiseContext'
 import { RootStackParamList } from '../navigation/AppNavigator'
+import {
+  buildNtfyUrl,
+  getStoredRelayName,
+  setStoredRelayName,
+} from '../services/ntfyImportService'
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Settings'>
 
@@ -57,6 +63,12 @@ async function openNotificationSettings(): Promise<void> {
   }
 }
 
+function generateRelayName(): string {
+  const timePart = Date.now().toString(36).slice(-6)
+  const randomPart = Math.random().toString(36).replace(/[^a-z0-9]/g, '').slice(2, 8)
+  return `${timePart}-${randomPart}`
+}
+
 // ---------------------------------------------------------------------------
 // Main screen
 // ---------------------------------------------------------------------------
@@ -67,6 +79,8 @@ export function SettingsScreen({ navigation }: Props) {
 
   const [draftCount, setDraftCount] = useState<number | null>(null)
   const [notificationAccess, setNotificationAccess] = useState<boolean | null>(null)
+  const [relayName, setRelayName] = useState('')
+  const [shortcutOpen, setShortcutOpen] = useState(false)
 
   // Load draft count on mount
   useEffect(() => {
@@ -78,9 +92,28 @@ export function SettingsScreen({ navigation }: Props) {
     checkNotificationAccess().then(setNotificationAccess)
   }, [])
 
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return
+    getStoredRelayName().then(setRelayName).catch(() => setRelayName(''))
+  }, [])
+
   const handleOpenNotificationSettings = useCallback(async () => {
     await openNotificationSettings()
   }, [])
+
+  const relayUrl = buildNtfyUrl(relayName)
+
+  const handleRelayAction = useCallback(async () => {
+    if (relayUrl) {
+      await Clipboard.setStringAsync(relayUrl)
+      Alert.alert('Copied', 'Relay URL copied. Paste it in your iOS Shortcut.')
+      return
+    }
+
+    const generatedName = generateRelayName()
+    await setStoredRelayName(generatedName)
+    setRelayName(generatedName)
+  }, [relayUrl])
 
   const handleClearDrafts = useCallback(() => {
     Alert.alert(
@@ -174,12 +207,67 @@ export function SettingsScreen({ navigation }: Props) {
 
           {Platform.OS === 'ios' && (
             <Text style={styles.infoNote}>
-              On iOS, Crumb reads transaction alerts through the SMS filter extension.
-              If alerts are not appearing, ensure the Crumb Message Filter is enabled in{' '}
-              Settings → Messages → Unknown &amp; Spam.
+              On iOS, Crumb imports transaction alerts through your personal Shortcuts relay.
             </Text>
           )}
         </View>
+
+        {Platform.OS === 'ios' && (
+          <View style={styles.card}>
+            <View style={styles.relayHeader}>
+              <View>
+                <Text style={styles.rowLabel}>iOS Shortcut Relay</Text>
+                <Text style={styles.infoNote}>Generate a private relay for this iPhone.</Text>
+              </View>
+            </View>
+
+            {relayUrl && (
+              <View style={styles.urlBox}>
+                <Text style={styles.urlLabel}>Relay URL</Text>
+                <Text style={styles.urlText} selectable>
+                  {relayUrl}
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={[styles.actionButton, styles.actionButtonPrimary]}
+              onPress={handleRelayAction}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionButtonPrimaryText}>
+                {relayUrl ? 'Copy Shortcut URL' : 'Generate iOS Relay'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.accordionHeader}
+              onPress={() => setShortcutOpen((open) => !open)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.accordionTitle}>How to create iOS Shortcut</Text>
+              <Text style={styles.chevron}>{shortcutOpen ? '⌃' : '⌄'}</Text>
+            </TouchableOpacity>
+
+            {shortcutOpen && (
+              <View style={styles.shortcutSteps}>
+                {[
+                  'Open Shortcuts app',
+                  'Create automation for Messages/SMS',
+                  'Add Get Contents of URL',
+                  'Paste copied ntfy URL',
+                  'Method POST',
+                  'Body should send SMS text as JSON/text',
+                  'Save automation',
+                ].map((step, index) => (
+                  <Text key={step} style={styles.stepText}>
+                    {index + 1}. {step}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       {/* ------------------------------------------------------------------ */}
@@ -405,6 +493,51 @@ const styles = StyleSheet.create({
     color: Colors.muted,
     lineHeight: 18,
   },
+  relayHeader: {
+    gap: 2,
+  },
+  urlBox: {
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.paper,
+    padding: Spacing.sm,
+    gap: 3,
+  },
+  urlLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: Colors.muted,
+  },
+  urlText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.ink,
+  },
+  accordionHeader: {
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: Spacing.sm,
+    marginTop: Spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  accordionTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.ink,
+  },
+  shortcutSteps: {
+    gap: 5,
+  },
+  stepText: {
+    fontSize: 13,
+    lineHeight: 19,
+    color: Colors.muted,
+  },
 
   // Card actions
   cardActions: {
@@ -433,6 +566,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
     borderWidth: 1.5,
     borderColor: Colors.ember,
+  },
+  disabledButton: {
+    opacity: 0.45,
   },
   actionButtonText: {
     fontSize: 14,

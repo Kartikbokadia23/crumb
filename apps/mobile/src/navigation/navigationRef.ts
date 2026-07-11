@@ -3,8 +3,22 @@ import type { RootStackParamList } from './AppNavigator'
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>()
 
+let pendingDraftReview:
+  | { draftId: string; autoPost: boolean }
+  | null = null
+
 export function navigateToDraftReview(draftId: string, autoPost = false): void {
-  if (!navigationRef.isReady()) return
+  if (!navigationRef.isReady()) {
+    pendingDraftReview = { draftId, autoPost }
+    return
+  }
+  navigationRef.navigate('DraftReview', { draftId, autoPost })
+}
+
+export function flushPendingNavigation(): void {
+  if (!pendingDraftReview || !navigationRef.isReady()) return
+  const { draftId, autoPost } = pendingDraftReview
+  pendingDraftReview = null
   navigationRef.navigate('DraftReview', { draftId, autoPost })
 }
 

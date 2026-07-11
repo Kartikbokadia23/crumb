@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Platform } from 'react-native'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AppState, Platform } from 'react-native'
 import { TransactionDraft } from '@crumb/core'
 import { useStorage } from '../context/StorageContext'
 import {
@@ -26,6 +26,7 @@ export function useDrafts() {
   const [drafts, setDrafts] = useState<TransactionDraft[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
+  const refreshInFlight = useRef<Promise<void> | null>(null)
 
   const loadDrafts = useCallback(async () => {
     setDrafts(await repo.listDrafts())
@@ -51,6 +52,7 @@ export function useDrafts() {
     const existingIds = new Set(existing.map((draft) => draft.id))
 
     await repo.saveDrafts(nativeDrafts)
+    const savedDraftIds = new Set((await repo.listDrafts()).map((draft) => draft.id))
 
     if (Platform.OS === 'android') {
       await clearAndroidStoredDrafts()
@@ -58,7 +60,10 @@ export function useDrafts() {
       await clearStoredMessageFilterDrafts()
 
       const imported = nativeDrafts.filter(
-        (draft) => !existingIds.has(draft.id) && draft.status === 'Pending',
+        (draft) =>
+          !existingIds.has(draft.id) &&
+          savedDraftIds.has(draft.id) &&
+          draft.status === 'Pending',
       )
       if (imported.length > 0) {
         await requestIosNotificationPermission()
@@ -103,19 +108,38 @@ export function useDrafts() {
   }, [repo])
 
   const refresh = useCallback(async () => {
-    setRefreshing(true)
+    if (refreshInFlight.current) return refreshInFlight.current
+
+    const task = (async () => {
+      setRefreshing(true)
+      try {
+        await importNativeDrafts()
+        await importShortcutDrafts()
+        await loadDrafts()
+      } finally {
+        setLoading(false)
+        setRefreshing(false)
+      }
+    })()
+
+    refreshInFlight.current = task
     try {
-      await importNativeDrafts()
-      await importShortcutDrafts()
-      await loadDrafts()
+      await task
     } finally {
-      setLoading(false)
-      setRefreshing(false)
+      if (refreshInFlight.current === task) refreshInFlight.current = null
     }
   }, [importNativeDrafts, importShortcutDrafts, loadDrafts])
 
   useEffect(() => {
     void refresh()
+  }, [refresh])
+
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') void refresh()
+    })
+    return () => subscription.remove()
   }, [refresh])
 
   const addDraft = useCallback(async (draft: TransactionDraft) => {

@@ -15,21 +15,26 @@ import java.util.UUID
 object CrumbNativeDraftStore {
   private const val PREFS = "crumb_native_drafts"
   private const val KEY_DRAFTS = "drafts"
+  private const val KEY_SEEN_HASHES = "seen_hashes"
+  private const val MAX_SEEN_HASHES = 200
 
   fun all(context: Context): JSONArray {
     val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_DRAFTS, "[]")
     return JSONArray(raw ?: "[]")
   }
 
+  @Synchronized
   fun clear(context: Context) {
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_DRAFTS).apply()
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().remove(KEY_DRAFTS).commit()
   }
 
+  @Synchronized
   fun addParsed(context: Context, parsed: ParsedNotificationTransaction): JSONObject? {
     val drafts = all(context)
     for (index in 0 until drafts.length()) {
       if (drafts.optJSONObject(index)?.optString("rawHash") == parsed.rawHash) return null
     }
+    if (hasSeenHash(context, parsed.rawHash)) return null
 
     val draft = JSONObject().apply {
       put("id", UUID.randomUUID().toString())
@@ -48,8 +53,42 @@ object CrumbNativeDraftStore {
     val next = JSONArray()
     next.put(draft)
     for (index in 0 until drafts.length()) next.put(drafts.get(index))
-    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_DRAFTS, next.toString()).apply()
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+      .edit()
+      .putString(KEY_DRAFTS, next.toString())
+      .putString(KEY_SEEN_HASHES, rememberHash(context, parsed.rawHash).toString())
+      .commit()
     return draft
+  }
+
+  private fun seenHashes(context: Context): JSONArray {
+    val raw = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_SEEN_HASHES, "[]")
+    return JSONArray(raw ?: "[]")
+  }
+
+  private fun hasSeenHash(context: Context, rawHash: String): Boolean {
+    val hashes = seenHashes(context)
+    for (index in 0 until hashes.length()) {
+      if (hashes.optString(index) == rawHash) return true
+    }
+    return false
+  }
+
+  private fun rememberHash(context: Context, rawHash: String): JSONArray {
+    val existing = seenHashes(context)
+    val next = JSONArray()
+    next.put(rawHash)
+
+    var count = 1
+    for (index in 0 until existing.length()) {
+      val hash = existing.optString(index)
+      if (hash.isBlank() || hash == rawHash) continue
+      next.put(hash)
+      count += 1
+      if (count >= MAX_SEEN_HASHES) break
+    }
+
+    return next
   }
 
   fun findById(context: Context, draftId: String): JSONObject? {

@@ -43,7 +43,7 @@ interface SplitwiseContextValue {
   handleRedirect: (url: string) => Promise<void>
   selectGroup: (id: number) => Promise<void>
   disconnect: () => Promise<void>
-  createExpense: (draft: TransactionDraft) => Promise<void>
+  createExpense: (draft: TransactionDraft, memberIds?: number[]) => Promise<void>
 }
 
 const SplitwiseContext = createContext<SplitwiseContextValue | null>(null)
@@ -178,7 +178,7 @@ export function SplitwiseProvider({ children }: { children: React.ReactNode }) {
   // ---------- createExpense ----------
 
   const createExpense = useCallback(
-    async (draft: TransactionDraft) => {
+    async (draft: TransactionDraft, memberIds?: number[]) => {
       if (state.type !== 'connected' || state.selectedGroupId === null) {
         throw new Error('Not connected to Splitwise or no group selected')
       }
@@ -188,12 +188,41 @@ export function SplitwiseProvider({ children }: { children: React.ReactNode }) {
         throw new Error('No access token found. Please reconnect.')
       }
 
-      const result = await client.createEqualExpense(
-        accessToken,
-        state.selectedGroupId,
-        draft.merchant,
-        draft.amount,
-      )
+      const selectedGroup = state.groups.find((group) => group.id === state.selectedGroupId)
+      const groupMemberIds = selectedGroup?.members?.map((member) => member.id) ?? []
+      const selectedMemberIds = normalizeMemberIds(memberIds ?? groupMemberIds)
+      const allGroupMembersSelected =
+        groupMemberIds.length > 0 && haveSameMembers(selectedMemberIds, groupMemberIds)
+
+      let result
+      if (memberIds === undefined || allGroupMembersSelected) {
+        result = await client.createEqualExpense(
+          accessToken,
+          state.selectedGroupId,
+          draft.merchant,
+          draft.amount,
+        )
+      } else {
+        if (!selectedMemberIds.includes(state.user.id)) {
+          throw new Error('You must be included in the split.')
+        }
+        if (selectedMemberIds.length < 2) {
+          throw new Error('Select at least 2 members.')
+        }
+
+        const owedShares = splitAmountEvenly(draft.amount, selectedMemberIds.length)
+        result = await client.createCustomEqualExpense(
+          accessToken,
+          state.selectedGroupId,
+          draft.merchant,
+          draft.amount,
+          selectedMemberIds.map((userId, index) => ({
+            userId,
+            paidShare: userId === state.user.id ? draft.amount : '0.00',
+            owedShare: owedShares[index],
+          })),
+        )
+      }
 
       if (Object.keys(result.errors).length > 0) {
         const msgs = Object.values(result.errors).flat().join('; ')
@@ -225,4 +254,25 @@ export function useSplitwiseContext(): SplitwiseContextValue {
     throw new Error('useSplitwiseContext must be used within a SplitwiseProvider')
   }
   return ctx
+}
+
+function normalizeMemberIds(memberIds: number[]): number[] {
+  return Array.from(new Set(memberIds.filter((id) => Number.isFinite(id))))
+}
+
+function haveSameMembers(left: number[], right: number[]): boolean {
+  if (left.length !== right.length) return false
+  const rightSet = new Set(right)
+  return left.every((id) => rightSet.has(id))
+}
+
+function splitAmountEvenly(amount: string, count: number): string[] {
+  const totalCents = Math.round(Number(amount) * 100)
+  const baseShare = Math.floor(totalCents / count)
+  const remainder = totalCents - baseShare * count
+
+  return Array.from({ length: count }, (_, index) => {
+    const cents = baseShare + (index < remainder ? 1 : 0)
+    return (cents / 100).toFixed(2)
+  })
 }

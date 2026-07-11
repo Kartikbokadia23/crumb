@@ -32,10 +32,9 @@ type Props = NativeStackScreenProps<RootStackParamList, 'DraftInbox'>
  * connection status, and lets the user post or ignore each draft.
  */
 export function DraftInboxScreen({ navigation }: Props) {
-  const { pendingDrafts: drafts, loading, refreshing, refresh, ignoreDraft, markPosted } = useDrafts()
-  const { isConnected, hasGroup, username, groupName, postDraft } = useSplitwise()
+  const { pendingDrafts: drafts, loading, refreshing, refresh, ignoreDraft } = useDrafts()
+  const { isConnected, hasGroup, username, groupName } = useSplitwise()
 
-  const [postingId, setPostingId] = useState<string | null>(null)
   const [listenerEnabled, setListenerEnabled] = useState(Platform.OS !== 'android')
 
   const syncListenerStatus = useCallback(async () => {
@@ -115,19 +114,9 @@ export function DraftInboxScreen({ navigation }: Props) {
         return
       }
 
-      setPostingId(draft.id)
-      try {
-        await postDraft(draft)
-        await markPosted(draft.id)
-        showToast(`Posted ₹${draft.amount} to ${groupName ?? 'Splitwise'}`)
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Failed to post expense'
-        Alert.alert('Post failed', message)
-      } finally {
-        setPostingId(null)
-      }
+      navigation.navigate('DraftReview', { draftId: draft.id })
     },
-    [isConnected, hasGroup, postDraft, markPosted, groupName, navigation],
+    [isConnected, hasGroup, navigation],
   )
 
   const handleIgnore = useCallback(
@@ -262,7 +251,6 @@ export function DraftInboxScreen({ navigation }: Props) {
       onPost={handlePost}
       onIgnore={handleIgnore}
       onPress={handleCardPress}
-      posting={postingId === item.id}
     />
   )
 
@@ -334,12 +322,6 @@ const pillStyles = StyleSheet.create({
     color: Colors.ink,
   },
 })
-
-function showToast(message: string) {
-  // React Native does not have a built-in toast. We use a simple Alert for now.
-  // A production build would use react-native-toast-message or similar.
-  Alert.alert('', message, [{ text: 'OK' }])
-}
 
 // ------------------------------------------------------------------ styles
 

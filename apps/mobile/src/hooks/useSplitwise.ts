@@ -8,9 +8,9 @@ interface UseSplitiwseReturn {
   handleRedirect: (url: string) => Promise<void>
   selectGroup: (id: number) => Promise<void>
   disconnect: () => Promise<void>
-  createExpense: (draft: TransactionDraft) => Promise<void>
+  createExpense: (draft: TransactionDraft, memberIds?: number[]) => Promise<void>
   /** Alias for createExpense — used by screens as postDraft */
-  postDraft: (draft: TransactionDraft) => Promise<void>
+  postDraft: (draft: TransactionDraft, memberIds?: number[]) => Promise<void>
   isConnected: boolean
   /** True when connected and a group is selected */
   hasGroup: boolean

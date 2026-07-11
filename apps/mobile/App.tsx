@@ -4,7 +4,7 @@ import { NavigationContainer } from '@react-navigation/native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { StatusBar } from 'expo-status-bar'
 import { AppNavigator } from './src/navigation/AppNavigator'
-import { navigationRef } from './src/navigation/navigationRef'
+import { flushPendingNavigation, navigationRef } from './src/navigation/navigationRef'
 import { StorageProvider, useStorage } from './src/context/StorageContext'
 import { SplitwiseProvider, useSplitwiseContext } from './src/context/SplitwiseContext'
 import { DraftNotificationHandler } from './src/services/DraftNotificationHandler'
@@ -76,7 +76,7 @@ export default function App() {
     <SafeAreaProvider>
       <StorageProvider>
         <SplitwiseProvider>
-          <NavigationContainer ref={navigationRef}>
+          <NavigationContainer ref={navigationRef} onReady={flushPendingNavigation}>
             <DeepLinkHandler />
             <DraftNotificationHandler />
             <AppNavigator />

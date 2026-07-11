@@ -6,9 +6,11 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  TouchableOpacity,
 } from 'react-native'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { TransactionDraft } from '@crumb/core'
+import { SplitwiseGroup, SplitwiseUser } from '@crumb/splitwise'
 import { Colors } from '../theme/colors'
 import { Spacing } from '../theme/spacing'
 import { Typography } from '../theme/typography'
@@ -23,13 +25,13 @@ import { PrimaryButton } from '../components/PrimaryButton'
 type Props = NativeStackScreenProps<RootStackParamList, 'DraftReview'>
 
 export function DraftReviewScreen({ route, navigation }: Props) {
-  const { draftId, autoPost } = route.params
+  const { draftId } = route.params
   const { drafts, loading, ignoreDraft, markPosted } = useDrafts()
-  const { isConnected, hasGroup, groupName, postDraft } = useSplitwise()
+  const { isConnected, hasGroup, groupName, postDraft, selectedGroup, currentUser } = useSplitwise()
 
   const [draft, setDraft] = useState<TransactionDraft | null | undefined>(undefined)
   const [posting, setPosting] = useState(false)
-  const autoPostTriggered = React.useRef(false)
+  const [selectedMemberIds, setSelectedMemberIds] = useState<number[]>([])
 
   // Resolve draft from the hook once data is loaded
   useEffect(() => {
@@ -39,12 +41,20 @@ export function DraftReviewScreen({ route, navigation }: Props) {
     }
   }, [draftId, drafts, loading])
 
+  useEffect(() => {
+    const memberIds = selectedGroup?.members?.map((member) => member.id) ?? []
+    if (currentUser && !memberIds.includes(currentUser.id)) {
+      memberIds.unshift(currentUser.id)
+    }
+    setSelectedMemberIds(memberIds)
+  }, [selectedGroup, currentUser])
+
   // ------------------------------------------------------------------ actions
 
-  const postNow = useCallback(async (d: TransactionDraft) => {
+  const postNow = useCallback(async (d: TransactionDraft, memberIds: number[]) => {
     setPosting(true)
     try {
-      await postDraft(d)
+      await postDraft(d, memberIds)
       await markPosted(d.id)
       navigation.goBack()
     } catch (err) {
@@ -54,14 +64,6 @@ export function DraftReviewScreen({ route, navigation }: Props) {
       setPosting(false)
     }
   }, [postDraft, markPosted, navigation])
-
-  // Auto-post when opened from "Yes" notification action
-  useEffect(() => {
-    if (!autoPost || !draft || autoPostTriggered.current) return
-    if (!isConnected || !hasGroup) return
-    autoPostTriggered.current = true
-    void postNow(draft)
-  }, [autoPost, draft, isConnected, hasGroup, postNow])
 
   const handlePost = useCallback(async () => {
     if (!draft) return
@@ -90,15 +92,30 @@ export function DraftReviewScreen({ route, navigation }: Props) {
       return
     }
 
+    if (selectedMemberIds.length < 2) {
+      Alert.alert('Select members', 'Choose at least 2 members for this split.')
+      return
+    }
+
     Alert.alert(
       'Post expense?',
       `Post ₹${draft.amount} at ${draft.merchant} to ${groupName ?? 'Splitwise'}?`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Post', onPress: () => void postNow(draft) },
+        { text: 'Post', onPress: () => void postNow(draft, selectedMemberIds) },
       ],
     )
-  }, [draft, isConnected, hasGroup, postNow, groupName, navigation])
+  }, [draft, isConnected, hasGroup, selectedMemberIds, postNow, groupName, navigation])
+
+  const toggleMember = useCallback(
+    (memberId: number) => {
+      if (memberId === currentUser?.id) return
+      setSelectedMemberIds((ids) =>
+        ids.includes(memberId) ? ids.filter((id) => id !== memberId) : [...ids, memberId],
+      )
+    },
+    [currentUser],
+  )
 
   const handleIgnore = useCallback(async () => {
     if (!draft) return
@@ -139,6 +156,8 @@ export function DraftReviewScreen({ route, navigation }: Props) {
   const rawHashShort = draft.rawHash.slice(-8).toUpperCase()
   const dateDisplay = formatDate(draft.occurredAt ?? draft.createdAt)
   const resolvedGroupName = groupName ?? null
+  const memberOptions = buildMemberOptions(selectedGroup, currentUser)
+  const canPost = !posting && (!hasGroup || selectedMemberIds.length >= 2)
 
   const statusBadgeColor =
     draft.status === 'Posted'
@@ -209,6 +228,49 @@ export function DraftReviewScreen({ route, navigation }: Props) {
         </View>
       )}
 
+      {isPending && isConnected && hasGroup && memberOptions.length > 0 && (
+        <View style={styles.splitCard}>
+          <View style={styles.splitHeader}>
+            <SectionLabel text="Split between" />
+            <Text style={styles.splitCount}>
+              {selectedMemberIds.length} of {memberOptions.length}
+            </Text>
+          </View>
+          <View style={styles.memberGrid}>
+            {memberOptions.map((member) => {
+              const selected = selectedMemberIds.includes(member.id)
+              const isCurrentUser = member.id === currentUser?.id
+              return (
+                <TouchableOpacity
+                  key={member.id}
+                  style={[
+                    styles.memberChip,
+                    selected && styles.memberChipSelected,
+                    isCurrentUser && styles.memberChipLocked,
+                  ]}
+                  onPress={() => toggleMember(member.id)}
+                  disabled={isCurrentUser || posting}
+                  activeOpacity={0.75}
+                >
+                  <Text
+                    style={[
+                      styles.memberChipText,
+                      selected && styles.memberChipTextSelected,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {member.name}{isCurrentUser ? ' (you)' : ''}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+          {selectedMemberIds.length < 2 && (
+            <Text style={styles.splitWarning}>Select at least 2 members to post.</Text>
+          )}
+        </View>
+      )}
+
       {/* Action buttons — only shown for pending drafts */}
       {isPending && (
         <View style={styles.actions}>
@@ -217,7 +279,7 @@ export function DraftReviewScreen({ route, navigation }: Props) {
             onPress={handlePost}
             variant="primary"
             loading={posting}
-            disabled={posting}
+            disabled={!canPost}
             style={styles.postButton}
           />
           <PrimaryButton
@@ -323,6 +385,30 @@ function formatDate(dateStr: string | null): string {
   }
 }
 
+function buildMemberOptions(
+  group: SplitwiseGroup | null,
+  currentUser: SplitwiseUser | null,
+): { id: number; name: string }[] {
+  const members =
+    group?.members?.map((member) => ({
+      id: member.id,
+      name: formatMemberName(member.first_name, member.last_name),
+    })) ?? []
+
+  if (currentUser && !members.some((member) => member.id === currentUser.id)) {
+    members.unshift({
+      id: currentUser.id,
+      name: formatMemberName(currentUser.first_name, currentUser.last_name),
+    })
+  }
+
+  return members
+}
+
+function formatMemberName(firstName: string, lastName?: string): string {
+  return [firstName, lastName].filter(Boolean).join(' ')
+}
+
 // ------------------------------------------------------------------ styles
 
 const styles = StyleSheet.create({
@@ -407,6 +493,59 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: Colors.ink,
     flex: 1,
+  },
+  splitCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: Spacing.sm,
+  },
+  splitHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  splitCount: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: Colors.muted,
+  },
+  memberGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  memberChip: {
+    maxWidth: '100%',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.paper,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 8,
+  },
+  memberChipSelected: {
+    backgroundColor: Colors.ink,
+    borderColor: Colors.ink,
+  },
+  memberChipLocked: {
+    borderColor: Colors.acid,
+  },
+  memberChipText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.ink,
+  },
+  memberChipTextSelected: {
+    color: Colors.surface,
+  },
+  splitWarning: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.ember,
   },
   // Actions
   actions: {
