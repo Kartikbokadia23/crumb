@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 70;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -13,10 +13,10 @@
 		A98A7691AFEAA05FD19EA409 /* libPods-Crumb.a in Frameworks */ = {isa = PBXBuildFile; fileRef = F0289D82A588A3C6525C788D /* libPods-Crumb.a */; };
 		B5546A1BFA430F46C9C58AD3 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C16BB98A305088FD0CD900D5 /* PrivacyInfo.xcprivacy */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
-		CBAA10012FF1A7520063497D /* Crumb/CrumbMessageFilterModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAA10032FF1A7520063497D /* Crumb/CrumbMessageFilterModule.swift */; };
-		CBAA10022FF1A7520063497D /* Crumb/CrumbMessageFilterModule.m in Sources */ = {isa = PBXBuildFile; fileRef = CBAA10042FF1A7520063497D /* Crumb/CrumbMessageFilterModule.m */; };
-		CBAA10112FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAA10132FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.swift */; };
-		CBAA10122FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.m in Sources */ = {isa = PBXBuildFile; fileRef = CBAA10142FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.m */; };
+		CBAA10012FF1A7520063497D /* CrumbMessageFilterModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAA10032FF1A7520063497D /* CrumbMessageFilterModule.swift */; };
+		CBAA10022FF1A7520063497D /* CrumbMessageFilterModule.m in Sources */ = {isa = PBXBuildFile; fileRef = CBAA10042FF1A7520063497D /* CrumbMessageFilterModule.m */; };
+		CBAA10112FF1A7520063497D /* CrumbDraftNotificationModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = CBAA10132FF1A7520063497D /* CrumbDraftNotificationModule.swift */; };
+		CBAA10122FF1A7520063497D /* CrumbDraftNotificationModule.m in Sources */ = {isa = PBXBuildFile; fileRef = CBAA10142FF1A7520063497D /* CrumbDraftNotificationModule.m */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
 
@@ -44,10 +44,10 @@
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Crumb/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
 		C16BB98A305088FD0CD900D5 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Crumb/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		CBAA10032FF1A7520063497D /* Crumb/CrumbMessageFilterModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Crumb/CrumbMessageFilterModule.swift; sourceTree = SOURCE_ROOT; };
-		CBAA10042FF1A7520063497D /* Crumb/CrumbMessageFilterModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Crumb/CrumbMessageFilterModule.m; sourceTree = SOURCE_ROOT; };
-		CBAA10132FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Crumb/CrumbDraftNotificationModule.swift; sourceTree = SOURCE_ROOT; };
-		CBAA10142FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Crumb/CrumbDraftNotificationModule.m; sourceTree = SOURCE_ROOT; };
+		CBAA10032FF1A7520063497D /* CrumbMessageFilterModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Crumb/CrumbMessageFilterModule.swift; sourceTree = SOURCE_ROOT; };
+		CBAA10042FF1A7520063497D /* CrumbMessageFilterModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Crumb/CrumbMessageFilterModule.m; sourceTree = SOURCE_ROOT; };
+		CBAA10132FF1A7520063497D /* CrumbDraftNotificationModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Crumb/CrumbDraftNotificationModule.swift; sourceTree = SOURCE_ROOT; };
+		CBAA10142FF1A7520063497D /* CrumbDraftNotificationModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = Crumb/CrumbDraftNotificationModule.m; sourceTree = SOURCE_ROOT; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F0289D82A588A3C6525C788D /* libPods-Crumb.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Crumb.a"; sourceTree = BUILT_PRODUCTS_DIR; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Crumb/AppDelegate.swift; sourceTree = "<group>"; };
@@ -55,7 +55,17 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		61BA45032FF1A7520063497D /* CrumbMessageFilterExtension */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = CrumbMessageFilterExtension; sourceTree = "<group>"; };
+		61BA45032FF1A7520063497D /* CrumbMessageFilterExtension */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = CrumbMessageFilterExtension;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -97,10 +107,10 @@
 		61BA45272FF2C03A0063497D /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
-				CBAA10032FF1A7520063497D /* Crumb/CrumbMessageFilterModule.swift */,
-				CBAA10042FF1A7520063497D /* Crumb/CrumbMessageFilterModule.m */,
-				CBAA10132FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.swift */,
-				CBAA10142FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.m */,
+				CBAA10032FF1A7520063497D /* CrumbMessageFilterModule.swift */,
+				CBAA10042FF1A7520063497D /* CrumbMessageFilterModule.m */,
+				CBAA10132FF1A7520063497D /* CrumbDraftNotificationModule.swift */,
+				CBAA10142FF1A7520063497D /* CrumbDraftNotificationModule.m */,
 			);
 			name = "Recovered References";
 			sourceTree = "<group>";
@@ -273,7 +283,7 @@
 			inputPaths = (
 				"$(SRCROOT)/.xcode.env",
 				"$(SRCROOT)/.xcode.env.local",
-				"$(SRCROOT)/Crumb/Crumb.entitlements",
+				"$(SRCROOT)/Crumb/CrumbDebug.entitlements",
 				"$(SRCROOT)/Pods/Target Support Files/Pods-Crumb/expo-configure-project.sh",
 			);
 			name = "[Expo] Configure project";
@@ -367,10 +377,10 @@
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
 				5D42011A71D160E9A098920C /* ExpoModulesProvider.swift in Sources */,
-				CBAA10012FF1A7520063497D /* Crumb/CrumbMessageFilterModule.swift in Sources */,
-				CBAA10022FF1A7520063497D /* Crumb/CrumbMessageFilterModule.m in Sources */,
-				CBAA10112FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.swift in Sources */,
-				CBAA10122FF1A7520063497D /* Crumb/CrumbDraftNotificationModule.m in Sources */,
+				CBAA10012FF1A7520063497D /* CrumbMessageFilterModule.swift in Sources */,
+				CBAA10022FF1A7520063497D /* CrumbMessageFilterModule.m in Sources */,
+				CBAA10112FF1A7520063497D /* CrumbDraftNotificationModule.swift in Sources */,
+				CBAA10122FF1A7520063497D /* CrumbDraftNotificationModule.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
