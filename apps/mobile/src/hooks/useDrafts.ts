@@ -17,7 +17,7 @@ import {
   requestIosNotificationPermission,
   scheduleIosDraftNotification,
 } from '../native/iosDraftNotificationModule'
-import { registerDraftRefresh } from '../services/draftNotificationActions'
+import { registerDraftRefresh, triggerDraftRefresh } from '../services/draftNotificationActions'
 import { pollNtfyDraftCandidates } from '../services/ntfyImportService'
 import { parseAndCreateDraft } from '../services/draftService'
 
@@ -158,6 +158,7 @@ export function useDrafts() {
   const updateStatus = useCallback(async (id: string, status: TransactionDraft['status']) => {
     await repo.updateDraftStatus(id, status)
     await loadDrafts()
+    triggerDraftRefresh()
   }, [loadDrafts, repo])
 
   useEffect(() => {

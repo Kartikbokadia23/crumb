@@ -46,26 +46,28 @@ export function DraftCard({
   }
 
   return (
-    <TouchableOpacity
-      style={styles.card}
-      onPress={handleCardPress}
-      activeOpacity={onPress ? 0.85 : 1}
-      disabled={!onPress}
-    >
+    <View style={styles.card}>
       {/* Top row: merchant + confidence + date */}
-      <View style={styles.topRow}>
-        <View style={styles.topLeft}>
-          <MerchantBadge merchant={draft.merchant} style={styles.merchantBadge} />
-          <ConfidenceBadge confidence={draft.confidence} />
+      <TouchableOpacity
+        style={styles.reviewArea}
+        onPress={handleCardPress}
+        activeOpacity={onPress ? 0.85 : 1}
+        disabled={!onPress}
+      >
+        <View style={styles.topRow}>
+          <View style={styles.topLeft}>
+            <MerchantBadge merchant={draft.merchant} style={styles.merchantBadge} />
+            <ConfidenceBadge confidence={draft.confidence} />
+          </View>
+          <Text style={styles.dateLabel}>{dateLabel}</Text>
         </View>
-        <Text style={styles.dateLabel}>{dateLabel}</Text>
-      </View>
 
-      {/* Middle: amount and source */}
-      <View style={styles.middleRow}>
-        <AmountText amount={draft.amount} size="large" />
-        <Text style={styles.sourceLabel}>{draft.sourceLabel}</Text>
-      </View>
+        {/* Middle: amount and source */}
+        <View style={styles.middleRow}>
+          <AmountText amount={draft.amount} size="large" />
+          <Text style={styles.sourceLabel}>{draft.sourceLabel}</Text>
+        </View>
+      </TouchableOpacity>
 
       {/* Bottom: action buttons */}
       <View style={styles.actions}>
@@ -88,7 +90,7 @@ export function DraftCard({
           </Text>
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </View>
   )
 }
 
@@ -120,6 +122,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,
+    gap: Spacing.md,
+  },
+  reviewArea: {
     gap: Spacing.md,
   },
   topRow: {

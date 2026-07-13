@@ -32,10 +32,11 @@ type Props = NativeStackScreenProps<RootStackParamList, 'DraftInbox'>
  * connection status, and lets the user post or ignore each draft.
  */
 export function DraftInboxScreen({ navigation }: Props) {
-  const { pendingDrafts: drafts, loading, refreshing, refresh, ignoreDraft } = useDrafts()
-  const { isConnected, hasGroup, username, groupName } = useSplitwise()
+  const { pendingDrafts: drafts, loading, refreshing, refresh, ignoreDraft, markPosted } = useDrafts()
+  const { isConnected, hasGroup, username, groupName, postDraft } = useSplitwise()
 
   const [listenerEnabled, setListenerEnabled] = useState(Platform.OS !== 'android')
+  const [postingDraftId, setPostingDraftId] = useState<string | null>(null)
 
   const syncListenerStatus = useCallback(async () => {
     if (Platform.OS !== 'android') {
@@ -84,6 +85,8 @@ export function DraftInboxScreen({ navigation }: Props) {
 
   const handlePost = useCallback(
     async (draft: TransactionDraft) => {
+      if (postingDraftId) return
+
       if (!isConnected) {
         Alert.alert(
           'Not connected',
@@ -114,9 +117,19 @@ export function DraftInboxScreen({ navigation }: Props) {
         return
       }
 
-      navigation.navigate('DraftReview', { draftId: draft.id })
+      setPostingDraftId(draft.id)
+      try {
+        await postDraft(draft)
+        await markPosted(draft.id)
+        await refresh()
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error'
+        Alert.alert('Post failed', message)
+      } finally {
+        setPostingDraftId(null)
+      }
     },
-    [isConnected, hasGroup, navigation],
+    [isConnected, hasGroup, markPosted, navigation, postDraft, postingDraftId, refresh],
   )
 
   const handleIgnore = useCallback(
@@ -251,6 +264,7 @@ export function DraftInboxScreen({ navigation }: Props) {
       onPost={handlePost}
       onIgnore={handleIgnore}
       onPress={handleCardPress}
+      posting={postingDraftId === item.id}
     />
   )
 
