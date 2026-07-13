@@ -8,6 +8,13 @@ const MONTH_ABBREVS: Record<string, number> = {
   jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
 }
 
+const NON_EXPENSE_SECURITY_PATTERN =
+  /\b(?:otp|one[-\s]?time password|verification code|login code|security code|do not share|never share|not you\??|sms block upi|block upi)\b/i
+const SENT_AMOUNT_PATTERN = /\bsent\s+(?:rs\.?|inr)\s*[\d,]+(?:\.\d{1,2})?\b/i
+const FROM_ACCOUNT_PATTERN = /\bfrom\s+[^.]+(?:bank|a\/c|account|acct|\*\d{2,})\b/i
+const TO_PARTY_PATTERN = /\bto\s+[a-z0-9][a-z0-9 .'-]{1,60}\b/i
+const TRANSFER_REFERENCE_PATTERN = /\b(?:ref|utr|upi\s+ref|transaction\s+id)\b/i
+
 function padTwo(n: number): string {
   return n < 10 ? `0${n}` : `${n}`
 }
@@ -88,9 +95,40 @@ function computeRawHash(text: string): string {
   return sha256(text.toLowerCase().trim())
 }
 
+function hasDirectMerchantPayee(text: string, merchant: string): boolean {
+  const aliases = MERCHANT_PAYEE_ALIASES[merchant] ?? []
+  return aliases.some((alias) => {
+    const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    return new RegExp(`\\b(?:to|at|paid\\s+to)\\s+${escaped}\\b`, 'i').test(text)
+  })
+}
+
+const MERCHANT_PAYEE_ALIASES: Record<string, string[]> = {
+  Blinkit: ['blinkit'],
+  Instamart: ['instamart', 'swiggy instamart', 'swiggy inst'],
+  Swiggy: ['swiggy'],
+  Zomato: ['zomato'],
+  Zepto: ['zepto'],
+  Amazon: ['amazonpaygrocery', 'amazonselle'],
+}
+
+function isNonExpenseAlert(text: string, merchant: string): boolean {
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  if (NON_EXPENSE_SECURITY_PATTERN.test(normalized)) return true
+  if (!SENT_AMOUNT_PATTERN.test(normalized)) return false
+  if (hasDirectMerchantPayee(normalized, merchant)) return false
+
+  return (
+    FROM_ACCOUNT_PATTERN.test(normalized) &&
+    TO_PARTY_PATTERN.test(normalized) &&
+    TRANSFER_REFERENCE_PATTERN.test(normalized)
+  )
+}
+
 export function parseTransactionAlert(text: string, sourceLabel: string): ParsedTransaction | null {
   const merchant = detectMerchant(`${text}\n${sourceLabel}`)
   if (merchant === 'Unknown') return null
+  if (isNonExpenseAlert(text, merchant)) return null
 
   const amount = extractAmount(text)
   if (!amount) return null

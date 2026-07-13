@@ -45,4 +45,18 @@ class CrumbNotificationParserTest {
     assertEquals("Swiggy", parsed?.merchant)
     assertEquals("50", parsed?.amount)
   }
+
+  @Test
+  fun rejectsOtpEvenWhenMerchantAndAmountAppear() {
+    val text = "Your Swiggy OTP is 123456 for transaction of Rs.50.00. Do not share it with anyone."
+
+    assertNull(CrumbNotificationParser.parse(text, "Swiggy"))
+  }
+
+  @Test
+  fun rejectsVerificationMessageEvenWithSupportedMerchantSource() {
+    val text = "Use verification code 123456 to login. Never share this code. Amount Rs.50.00"
+
+    assertNull(CrumbNotificationParser.parse(text, "Zomato"))
+  }
 }

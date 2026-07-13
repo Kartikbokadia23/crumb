@@ -146,4 +146,47 @@ describe('parseTransactionAlert', () => {
     const r2 = parseTransactionAlert(ALERTS['hdfc-card-swiggy'], 'hdfc-card')
     expect(r1!.rawHash).not.toBe(r2!.rawHash)
   })
+
+  test('rejects bank transfer to a person even if merchant text leaks in', () => {
+    const result = parseTransactionAlert(
+      `Swiggy
+      Sent Rs.50.00
+      From HDFC Bank A/C *8899
+      To Ram Balak
+      On 13/07/26
+      Ref 656019660532
+      Not You?
+      Call 18002586161/SMS BLOCK UPI to 7308080808`,
+      'bob World',
+    )
+
+    expect(result).toBeNull()
+  })
+
+  test('keeps direct merchant bank payment eligible', () => {
+    const result = parseTransactionAlert(
+      'Sent Rs.50.00 From HDFC Bank A/C *8899 To Swiggy On 13/07/26 Ref 656019660532',
+      'HDFC Bank',
+    )
+
+    expect(result).not.toBeNull()
+    expect(result!.merchant).toBe('Swiggy')
+    expect(result!.amount).toBe('50.00')
+  })
+
+  test('rejects otp and verification alerts even with merchant and amount', () => {
+    expect(
+      parseTransactionAlert(
+        'Your Swiggy OTP is 123456 for transaction of Rs.50.00. Do not share it with anyone.',
+        'Swiggy',
+      ),
+    ).toBeNull()
+
+    expect(
+      parseTransactionAlert(
+        'Use verification code 123456 to login. Never share this code. Amount Rs.50.00',
+        'Zomato',
+      ),
+    ).toBeNull()
+  })
 })

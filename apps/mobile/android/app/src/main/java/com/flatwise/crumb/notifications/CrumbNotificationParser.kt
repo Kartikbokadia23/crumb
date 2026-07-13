@@ -25,6 +25,10 @@ object CrumbNotificationParser {
   private val toParty = Regex("""\bto\s+[a-z0-9][a-z0-9 .'-]{1,60}\b""", RegexOption.IGNORE_CASE)
   private val transferReference = Regex("""\b(?:ref|utr|upi\s+ref|transaction\s+id)\b""", RegexOption.IGNORE_CASE)
   private val safetyFooter = Regex("""\bnot\s+you\??\b|\bsms\s+block\s+upi\b|\bblock\s+upi\b""", RegexOption.IGNORE_CASE)
+  private val securityAlert = Regex(
+    """\b(?:otp|one[-\s]?time password|verification code|login code|security code|do not share|never share)\b""",
+    RegexOption.IGNORE_CASE
+  )
 
   fun parse(rawText: String, sourceLabel: String): ParsedNotificationTransaction? {
     val merchant = detectMerchant(rawText) ?: return null
@@ -62,6 +66,7 @@ object CrumbNotificationParser {
 
   private fun isNonReceiptTransfer(text: String, merchant: String): Boolean {
     val normalized = text.replace(whitespace, " ").trim()
+    if (securityAlert.containsMatchIn(normalized)) return true
     if (!sentAmount.containsMatchIn(normalized)) return false
     if (hasDirectMerchantPayee(normalized, merchant)) return false
 
