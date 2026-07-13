@@ -19,9 +19,17 @@ object CrumbNotificationParser {
   private val numericDate = Regex("""(?i)on\s+(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})""")
   private val slashDate = Regex("""(?i)on\s+(\d{1,2})/(\d{1,2})/(\d{2})""")
   private val namedDate = Regex("""(?i)on\s+(\d{1,2})-([a-z]{3})-(\d{2})""")
+  private val whitespace = Regex("""\s+""")
+  private val sentAmount = Regex("""\bsent\s+(?:rs\.?|inr)\s*[0-9,]+(?:\.[0-9]{1,2})?\b""", RegexOption.IGNORE_CASE)
+  private val fromAccount = Regex("""\bfrom\s+[^.]+(?:bank|a/c|account|acct|\*\d{2,})\b""", RegexOption.IGNORE_CASE)
+  private val toParty = Regex("""\bto\s+[a-z0-9][a-z0-9 .'-]{1,60}\b""", RegexOption.IGNORE_CASE)
+  private val transferReference = Regex("""\b(?:ref|utr|upi\s+ref|transaction\s+id)\b""", RegexOption.IGNORE_CASE)
+  private val safetyFooter = Regex("""\bnot\s+you\??\b|\bsms\s+block\s+upi\b|\bblock\s+upi\b""", RegexOption.IGNORE_CASE)
 
   fun parse(rawText: String, sourceLabel: String): ParsedNotificationTransaction? {
     val merchant = detectMerchant(rawText) ?: return null
+    if (isNonReceiptTransfer(rawText, merchant)) return null
+
     val amount = parseAmount(rawText) ?: return null
 
     val occurredAt = parseOccurredAt(rawText)
@@ -49,6 +57,35 @@ object CrumbNotificationParser {
       lower.contains("zomato") -> "Zomato"
       lower.contains("zepto") -> "Zepto"
       else -> null
+    }
+  }
+
+  private fun isNonReceiptTransfer(text: String, merchant: String): Boolean {
+    val normalized = text.replace(whitespace, " ").trim()
+    if (!sentAmount.containsMatchIn(normalized)) return false
+    if (hasDirectMerchantPayee(normalized, merchant)) return false
+
+    val transferShape =
+      fromAccount.containsMatchIn(normalized) &&
+        toParty.containsMatchIn(normalized) &&
+        transferReference.containsMatchIn(normalized)
+
+    return transferShape || safetyFooter.containsMatchIn(normalized)
+  }
+
+  private fun hasDirectMerchantPayee(text: String, merchant: String): Boolean {
+    val aliases = when (merchant) {
+      "Blinkit" -> listOf("blinkit")
+      "Instamart" -> listOf("instamart", "swiggy instamart", "swiggy inst")
+      "Swiggy" -> listOf("swiggy")
+      "Zomato" -> listOf("zomato")
+      "Zepto" -> listOf("zepto")
+      else -> emptyList()
+    }
+
+    return aliases.any { alias ->
+      Regex("""\b(?:to|at|paid\s+to)\s+${Regex.escape(alias)}\b""", RegexOption.IGNORE_CASE)
+        .containsMatchIn(text)
     }
   }
 

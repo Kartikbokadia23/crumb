@@ -24,13 +24,25 @@ class CrumbNotificationListenerService : NotificationListenerService() {
   }
 
   private fun notificationText(notification: Notification): String {
+    if ((notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return ""
+
     val extras = notification.extras ?: return ""
-    val parts = mutableListOf<String>()
-    extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.let(parts::add)
-    extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()?.let(parts::add)
-    extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString()?.let(parts::add)
-    extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.forEach { parts.add(it.toString()) }
-    return parts.distinct().joinToString("\n")
+    val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
+    val body = listOf(
+      extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
+      extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
+    ).firstOrNull { !it.isNullOrBlank() }?.trim()
+    val textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
+      ?.map { it.toString().trim() }
+      ?.filter { it.isNotBlank() }
+      ?.distinct()
+      ?.joinToString("\n")
+      ?.takeIf { it.isNotBlank() }
+
+    return listOfNotNull(title, body ?: textLines)
+      .filter { it.isNotBlank() }
+      .distinct()
+      .joinToString("\n")
   }
 
   private fun sourceLabel(packageName: String): String {
