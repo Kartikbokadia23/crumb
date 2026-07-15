@@ -10,6 +10,10 @@ local.properties
 *.aab
 
 .DS_Store
+.derivedData/
+**/.derivedData/
+.kotlin/
+**/.kotlin/
 **/.DS_Store
 node_modules/
 **/node_modules/

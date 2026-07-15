@@ -44,11 +44,10 @@ object CrumbNotificationParser {
       occurredAt = occurredAt,
       sourceLabel = sourceLabel.ifBlank { "Android notification" },
       confidence = "High",
-      // Hash the normalized transaction identity, not the raw notification text:
-      // Android reposts the same SMS notification multiple times with slightly
-      // different concatenated text (growing EXTRA_TEXT_LINES, group summaries),
-      // which would otherwise produce a different hash per repost and defeat dedup.
-      rawHash = sha256("$merchant|$amount|${occurredAt ?: ""}")
+      // Persistent protection is based on this one notification's normalized text.
+      // Listener-level TTL dedupe handles repost events; this prevents the same
+      // receipt from being saved again after a process restart.
+      rawHash = sha256("${sourceLabel.lowercase(Locale.US)}|${rawText.replace(whitespace, " ").trim().lowercase(Locale.US)}")
     )
   }
 

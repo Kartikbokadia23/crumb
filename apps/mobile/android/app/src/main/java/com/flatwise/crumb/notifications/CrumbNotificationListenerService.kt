@@ -5,44 +5,44 @@ import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 
 class CrumbNotificationListenerService : NotificationListenerService() {
+  private val eventDedupe = CrumbNotificationEventDedupe()
+
   override fun onNotificationPosted(sbn: StatusBarNotification) {
     processNotification(sbn)
   }
 
   override fun onListenerConnected() {
+    // Android may not replay posts that arrived while this listener was disconnected.
+    // These still go through the same event TTL gate as normal posts.
     activeNotifications?.forEach { processNotification(it) }
   }
 
   private fun processNotification(sbn: StatusBarNotification) {
-    val text = notificationText(sbn.notification).trim()
-    if (text.isBlank()) return
+    if (sbn.packageName == CRUMB_PACKAGE_NAME) return
+    if ((sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
 
-    val parsed = CrumbNotificationParser.parse(text, sourceLabel(sbn.packageName)) ?: return
-    val draft = CrumbNativeDraftStore.addParsed(applicationContext, parsed) ?: return
-    CrumbNotificationModule.instance?.emitNewDraft(draft)
-    CrumbReceiptNotificationCenter.showReceiptDecision(applicationContext, draft)
+    notificationTexts(sbn.notification).forEach { candidate ->
+      val text = CrumbAndroidNotificationIngestion.stripTransportPrefix(candidate)
+      if (!CrumbAndroidNotificationIngestion.isEligibleReceiptText(text)) return@forEach
+
+      val parsed = CrumbNotificationParser.parse(text, sourceLabel(sbn.packageName)) ?: return@forEach
+      // Dedupe only verified parser candidates. Conversation updates share an
+      // sbn.key, so the delivery key is package + candidate text instead.
+      if (!eventDedupe.shouldProcess(sbn.packageName, text)) return@forEach
+
+      val draft = CrumbNativeDraftStore.addParsed(applicationContext, parsed) ?: return@forEach
+      CrumbNotificationModule.instance?.emitNewDraft(draft)
+      CrumbReceiptNotificationCenter.showReceiptDecision(applicationContext, draft)
+    }
   }
 
-  private fun notificationText(notification: Notification): String {
-    if ((notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return ""
-
-    val extras = notification.extras ?: return ""
-    val title = extras.getCharSequence(Notification.EXTRA_TITLE)?.toString()?.trim().orEmpty()
-    val body = listOf(
-      extras.getCharSequence(Notification.EXTRA_BIG_TEXT)?.toString(),
-      extras.getCharSequence(Notification.EXTRA_TEXT)?.toString()
-    ).firstOrNull { !it.isNullOrBlank() }?.trim()
-    val textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)
-      ?.map { it.toString().trim() }
-      ?.filter { it.isNotBlank() }
-      ?.distinct()
-      ?.joinToString("\n")
-      ?.takeIf { it.isNotBlank() }
-
-    return listOfNotNull(title, body ?: textLines)
-      .filter { it.isNotBlank() }
-      .distinct()
-      .joinToString("\n")
+  private fun notificationTexts(notification: Notification): List<String> {
+    val extras = notification.extras ?: return emptyList()
+    return CrumbAndroidNotificationIngestion.candidateTexts(
+      textLines = extras.getCharSequenceArray(Notification.EXTRA_TEXT_LINES)?.toList().orEmpty(),
+      bigText = extras.getCharSequence(Notification.EXTRA_BIG_TEXT),
+      text = extras.getCharSequence(Notification.EXTRA_TEXT)
+    )
   }
 
   private fun sourceLabel(packageName: String): String {
@@ -52,5 +52,9 @@ class CrumbNotificationListenerService : NotificationListenerService() {
     } catch (_: Exception) {
       packageName
     }
+  }
+
+  private companion object {
+    const val CRUMB_PACKAGE_NAME = "com.flatwise.crumb"
   }
 }
