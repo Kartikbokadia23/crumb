@@ -10,6 +10,14 @@ class CrumbAndroidNotificationIngestionTest {
   private val twilioInstamartOtp = "$twilioInstamart otp 696969"
 
   @Test
+  fun acceptsOnlyGoogleMessagesAsTheAndroidReceiptSource() {
+    assertTrue(CrumbAndroidNotificationIngestion.isGoogleMessagesPackage("com.google.android.apps.messaging"))
+    assertFalse(CrumbAndroidNotificationIngestion.isGoogleMessagesPackage("com.google.android.gm"))
+    assertFalse(CrumbAndroidNotificationIngestion.isGoogleMessagesPackage("com.whatsapp"))
+    assertFalse(CrumbAndroidNotificationIngestion.isGoogleMessagesPackage("com.flatwise.crumb"))
+  }
+
+  @Test
   fun sameValidNotificationDeliveredTwiceIsProcessedOnce() {
     val dedupe = CrumbNotificationEventDedupe()
     assertTrue(dedupe.shouldProcess("com.google.android.apps.messaging", swiggy))

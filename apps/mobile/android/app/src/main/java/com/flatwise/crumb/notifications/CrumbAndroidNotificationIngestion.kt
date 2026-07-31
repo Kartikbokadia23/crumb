@@ -5,6 +5,8 @@ import java.util.Locale
 
 /** Android-only safety checks that run before the receipt parser. */
 object CrumbAndroidNotificationIngestion {
+  const val GOOGLE_MESSAGES_PACKAGE_NAME = "com.google.android.apps.messaging"
+
   private val whitespace = Regex("""\s+""")
   private val twilioTransportPrefix = Regex(
     """^\s*sent from your twilio trial account\s*-\s*""",
@@ -60,6 +62,9 @@ object CrumbAndroidNotificationIngestion {
   }
 
   fun stripTransportPrefix(text: String): String = text.replace(twilioTransportPrefix, "").trim()
+
+  fun isGoogleMessagesPackage(packageName: String): Boolean =
+    packageName == GOOGLE_MESSAGES_PACKAGE_NAME
 
   fun normalizedTextHash(text: String): String {
     val bytes = MessageDigest.getInstance("SHA-256")

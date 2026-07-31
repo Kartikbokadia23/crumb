@@ -18,14 +18,16 @@ class CrumbNotificationListenerService : NotificationListenerService() {
   }
 
   private fun processNotification(sbn: StatusBarNotification) {
-    if (sbn.packageName == CRUMB_PACKAGE_NAME) return
+    // NotificationListenerService receives every app's posts. Crumb has one
+    // authoritative Android receipt source: Google Messages.
+    if (!CrumbAndroidNotificationIngestion.isGoogleMessagesPackage(sbn.packageName)) return
     if ((sbn.notification.flags and Notification.FLAG_GROUP_SUMMARY) != 0) return
 
     notificationTexts(sbn.notification).forEach { candidate ->
       val text = CrumbAndroidNotificationIngestion.stripTransportPrefix(candidate)
       if (!CrumbAndroidNotificationIngestion.isEligibleReceiptText(text)) return@forEach
 
-      val parsed = CrumbNotificationParser.parse(text, sourceLabel(sbn.packageName)) ?: return@forEach
+      val parsed = CrumbNotificationParser.parse(text, "Messages") ?: return@forEach
       // Dedupe only verified parser candidates. Conversation updates share an
       // sbn.key, so the delivery key is package + candidate text instead.
       if (!eventDedupe.shouldProcess(sbn.packageName, text)) return@forEach
@@ -45,16 +47,4 @@ class CrumbNotificationListenerService : NotificationListenerService() {
     )
   }
 
-  private fun sourceLabel(packageName: String): String {
-    return try {
-      val info = packageManager.getApplicationInfo(packageName, 0)
-      packageManager.getApplicationLabel(info).toString()
-    } catch (_: Exception) {
-      packageName
-    }
-  }
-
-  private companion object {
-    const val CRUMB_PACKAGE_NAME = "com.flatwise.crumb"
-  }
 }
