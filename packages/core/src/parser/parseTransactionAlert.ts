@@ -10,10 +10,6 @@ const MONTH_ABBREVS: Record<string, number> = {
 
 const NON_EXPENSE_SECURITY_PATTERN =
   /\b(?:otp|one[-\s]?time password|verification code|login code|security code|do not share|never share|not you\??|sms block upi|block upi)\b/i
-const SENT_AMOUNT_PATTERN = /\bsent\s+(?:rs\.?|inr)\s*[\d,]+(?:\.\d{1,2})?\b/i
-const FROM_ACCOUNT_PATTERN = /\bfrom\s+[^.]+(?:bank|a\/c|account|acct|\*\d{2,})\b/i
-const TO_PARTY_PATTERN = /\bto\s+[a-z0-9][a-z0-9 .'-]{1,60}\b/i
-const TRANSFER_REFERENCE_PATTERN = /\b(?:ref|utr|upi\s+ref|transaction\s+id)\b/i
 
 function padTwo(n: number): string {
   return n < 10 ? `0${n}` : `${n}`
@@ -128,13 +124,7 @@ function isNonExpenseAlert(text: string, merchant: string): boolean {
   // e.g. Kotak appends "Not you," to all payment confirmations — still a real expense.
   if (hasDirectMerchantPayee(normalized, merchant)) return false
   if (NON_EXPENSE_SECURITY_PATTERN.test(normalized)) return true
-  if (!SENT_AMOUNT_PATTERN.test(normalized)) return false
-
-  return (
-    FROM_ACCOUNT_PATTERN.test(normalized) &&
-    TO_PARTY_PATTERN.test(normalized) &&
-    TRANSFER_REFERENCE_PATTERN.test(normalized)
-  )
+  return false
 }
 
 export function parseTransactionAlert(text: string, sourceLabel: string): ParsedTransaction | null {

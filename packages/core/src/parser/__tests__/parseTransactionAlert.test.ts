@@ -147,7 +147,7 @@ describe('parseTransactionAlert', () => {
     expect(r1!.rawHash).not.toBe(r2!.rawHash)
   })
 
-  test('rejects bank transfer to a person even if merchant text leaks in', () => {
+  test('rejects alert with fraud/security keywords (SMS BLOCK UPI / Not you?) even if merchant name is present', () => {
     const result = parseTransactionAlert(
       `Swiggy
       Sent Rs.50.00
