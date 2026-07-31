@@ -13,3 +13,6 @@ export const INDIAN_DATE = /\b(\d{2}-[A-Za-z]{3}-\d{2})\b/
 
 // Slash: 15/01/24
 export const SLASH_DATE = /\b(\d{2}\/\d{2}\/\d{2})\b/
+
+// Dash numeric: 29-07-26 (DD-MM-YY, no time, used by Kotak and similar)
+export const DASH_DATE = /\bon\s+(\d{2}-\d{2}-\d{2})\b/i

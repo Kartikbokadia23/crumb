@@ -1,7 +1,7 @@
 import { sha256 } from 'js-sha256'
 import { ParsedTransaction, Confidence } from '../models/ParsedTransaction'
 import { detectMerchant } from './merchants'
-import { AMOUNT_PATTERN, ISO_DATETIME, PLUXEE_DATETIME, INDIAN_DATE, SLASH_DATE } from './patterns'
+import { AMOUNT_PATTERN, ISO_DATETIME, PLUXEE_DATETIME, INDIAN_DATE, SLASH_DATE, DASH_DATE } from './patterns'
 
 const MONTH_ABBREVS: Record<string, number> = {
   jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
@@ -10,10 +10,6 @@ const MONTH_ABBREVS: Record<string, number> = {
 
 const NON_EXPENSE_SECURITY_PATTERN =
   /\b(?:otp|one[-\s]?time password|verification code|login code|security code|do not share|never share|not you\??|sms block upi|block upi)\b/i
-const SENT_AMOUNT_PATTERN = /\bsent\s+(?:rs\.?|inr)\s*[\d,]+(?:\.\d{1,2})?\b/i
-const FROM_ACCOUNT_PATTERN = /\bfrom\s+[^.]+(?:bank|a\/c|account|acct|\*\d{2,})\b/i
-const TO_PARTY_PATTERN = /\bto\s+[a-z0-9][a-z0-9 .'-]{1,60}\b/i
-const TRANSFER_REFERENCE_PATTERN = /\b(?:ref|utr|upi\s+ref|transaction\s+id)\b/i
 
 function padTwo(n: number): string {
   return n < 10 ? `0${n}` : `${n}`
@@ -59,6 +55,16 @@ function parseOccurredAt(text: string): string | null {
     const raw = slashMatch[1]
     // raw format: "12/01/24"
     const [dd, mm, yy] = raw.split('/')
+    const yyyy = 2000 + parseInt(yy, 10)
+    return `${yyyy}-${mm}-${dd}`
+  }
+
+  // 5. Dash numeric: DD-MM-YY (e.g. Kotak "on 29-07-26")
+  const dashMatch = text.match(DASH_DATE)
+  if (dashMatch) {
+    const raw = dashMatch[1]
+    // raw format: "29-07-26"
+    const [dd, mm, yy] = raw.split('-')
     const yyyy = 2000 + parseInt(yy, 10)
     return `${yyyy}-${mm}-${dd}`
   }
@@ -114,15 +120,11 @@ const MERCHANT_PAYEE_ALIASES: Record<string, string[]> = {
 
 function isNonExpenseAlert(text: string, merchant: string): boolean {
   const normalized = text.replace(/\s+/g, ' ').trim()
-  if (NON_EXPENSE_SECURITY_PATTERN.test(normalized)) return true
-  if (!SENT_AMOUNT_PATTERN.test(normalized)) return false
+  // Direct merchant UPI payee wins over any security-footer language.
+  // e.g. Kotak appends "Not you," to all payment confirmations — still a real expense.
   if (hasDirectMerchantPayee(normalized, merchant)) return false
-
-  return (
-    FROM_ACCOUNT_PATTERN.test(normalized) &&
-    TO_PARTY_PATTERN.test(normalized) &&
-    TRANSFER_REFERENCE_PATTERN.test(normalized)
-  )
+  if (NON_EXPENSE_SECURITY_PATTERN.test(normalized)) return true
+  return false
 }
 
 export function parseTransactionAlert(text: string, sourceLabel: string): ParsedTransaction | null {
