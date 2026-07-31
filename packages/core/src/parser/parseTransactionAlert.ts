@@ -1,7 +1,7 @@
 import { sha256 } from 'js-sha256'
 import { ParsedTransaction, Confidence } from '../models/ParsedTransaction'
 import { detectMerchant } from './merchants'
-import { AMOUNT_PATTERN, ISO_DATETIME, PLUXEE_DATETIME, INDIAN_DATE, SLASH_DATE } from './patterns'
+import { AMOUNT_PATTERN, ISO_DATETIME, PLUXEE_DATETIME, INDIAN_DATE, SLASH_DATE, DASH_DATE } from './patterns'
 
 const MONTH_ABBREVS: Record<string, number> = {
   jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
@@ -63,6 +63,16 @@ function parseOccurredAt(text: string): string | null {
     return `${yyyy}-${mm}-${dd}`
   }
 
+  // 5. Dash numeric: DD-MM-YY (e.g. Kotak "on 29-07-26")
+  const dashMatch = text.match(DASH_DATE)
+  if (dashMatch) {
+    const raw = dashMatch[1]
+    // raw format: "29-07-26"
+    const [dd, mm, yy] = raw.split('-')
+    const yyyy = 2000 + parseInt(yy, 10)
+    return `${yyyy}-${mm}-${dd}`
+  }
+
   return null
 }
 
@@ -114,9 +124,11 @@ const MERCHANT_PAYEE_ALIASES: Record<string, string[]> = {
 
 function isNonExpenseAlert(text: string, merchant: string): boolean {
   const normalized = text.replace(/\s+/g, ' ').trim()
+  // Direct merchant UPI payee wins over any security-footer language.
+  // e.g. Kotak appends "Not you," to all payment confirmations — still a real expense.
+  if (hasDirectMerchantPayee(normalized, merchant)) return false
   if (NON_EXPENSE_SECURITY_PATTERN.test(normalized)) return true
   if (!SENT_AMOUNT_PATTERN.test(normalized)) return false
-  if (hasDirectMerchantPayee(normalized, merchant)) return false
 
   return (
     FROM_ACCOUNT_PATTERN.test(normalized) &&

@@ -174,6 +174,29 @@ describe('parseTransactionAlert', () => {
     expect(result!.amount).toBe('50.00')
   })
 
+  test('kotak-blinkit-not-you-comma: parses Kotak UPI payment ending with "Not you,"', () => {
+    const result = parseTransactionAlert(
+      'Sent Rs.726.00 from Kotak Bank AC X0984 to blinkit.rzp@hdfcbank on 29-07-26.UPI Ref 657691584427. Not you,',
+      'Kotak Bank',
+    )
+    expect(result).not.toBeNull()
+    expect(result!.merchant).toBe('Blinkit')
+    expect(result!.amount).toBe('726.00')
+    expect(result!.occurredAt).toBe('2026-07-29')
+    expect(result!.confidence).toBe('Medium')
+  })
+
+  test('kotak-blinkit-not-you-space-question: parses Kotak UPI payment ending with "Not you ?"', () => {
+    const result = parseTransactionAlert(
+      'Sent Rs.726.00 from Kotak Bank AC X0984 to blinkit.rzp@hdfcbank on 29-07-26.UPI Ref 657691584427. Not you ?',
+      'Kotak Bank',
+    )
+    expect(result).not.toBeNull()
+    expect(result!.merchant).toBe('Blinkit')
+    expect(result!.amount).toBe('726.00')
+    expect(result!.occurredAt).toBe('2026-07-29')
+  })
+
   test('rejects otp and verification alerts even with merchant and amount', () => {
     expect(
       parseTransactionAlert(
