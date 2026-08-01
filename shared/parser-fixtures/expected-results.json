@@ -54,5 +54,12 @@
     "amount": "499.00",
     "confidence": "High",
     "hasDatetime": true
+  },
+  {
+    "alertId": "hdfc-card-instamart-block-footer",
+    "merchant": "Instamart",
+    "amount": "412.00",
+    "confidence": "High",
+    "hasDatetime": true
   }
 ]

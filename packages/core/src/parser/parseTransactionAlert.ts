@@ -8,8 +8,22 @@ const MONTH_ABBREVS: Record<string, number> = {
   jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
 }
 
-const NON_EXPENSE_SECURITY_PATTERN =
-  /\b(?:otp|one[-\s]?time password|verification code|login code|security code|do not share|never share|not you\??|sms block upi|block upi)\b/i
+// Only OTP / verification messages are hard-blocked. Everything else that names a
+// merchant and an amount is treated as a real expense.
+const OTP_PATTERN =
+  /\b(?:otp|one[-\s]?time\s?password|verification code|login code|security code|authentication code)\b/i
+
+// Banks append a fraud-report footer to genuine debit alerts ("Not you? To Block+Reissue
+// Call 1800.../SMS BLOCK CC ..."). It is noise, and its wording collides with real
+// transaction text, so everything from the footer onward is dropped before parsing.
+const SECURITY_FOOTER_PATTERN =
+  /\b(?:not\s*you\b|sms\s+block\b|to\s+block\b|to\s+report\b|call\s+1800\d+)/i
+
+// Payee of a transfer-style alert ("Sent Rs.50 from A/C X to <payee> on ...").
+// Captured so a transfer to someone else is not credited to a merchant that merely
+// appears elsewhere in the message (e.g. the notification title).
+const TRANSFER_PAYEE_PATTERN =
+  /\b(?:sent|paid|debited|transferred)\b[\s\S]{0,80}?\bto\s+(\S[^\n]*?)(?=\s+on\b|\s+ref\b|\s+upi\b|[,;]|\.\s|$)/i
 
 function padTwo(n: number): string {
   return n < 10 ? `0${n}` : `${n}`
@@ -19,9 +33,8 @@ function parseOccurredAt(text: string): string | null {
   // 1. ISO: YYYY-MM-DD HH:MM:SS
   const isoMatch = text.match(ISO_DATETIME)
   if (isoMatch) {
-    // Already in ISO-ish form, convert to ISO-8601 with T separator
-    const raw = isoMatch[1]
-    return raw.replace(' ', 'T')
+    // Already in ISO-ish form, normalise the separator to T
+    return `${isoMatch[1]}T${isoMatch[2]}`
   }
 
   // 2. Pluxee: DD-MM-YYYY HH:MM:SS
@@ -101,42 +114,32 @@ function computeRawHash(text: string): string {
   return sha256(text.toLowerCase().trim())
 }
 
-function hasDirectMerchantPayee(text: string, merchant: string): boolean {
-  const aliases = MERCHANT_PAYEE_ALIASES[merchant] ?? []
-  return aliases.some((alias) => {
-    const escaped = alias.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    return new RegExp(`\\b(?:to|at|paid\\s+to)\\s+${escaped}\\b`, 'i').test(text)
-  })
+function stripSecurityFooter(text: string): string {
+  const match = text.match(SECURITY_FOOTER_PATTERN)
+  return match ? text.slice(0, match.index).trim() : text
 }
 
-const MERCHANT_PAYEE_ALIASES: Record<string, string[]> = {
-  Blinkit: ['blinkit'],
-  Instamart: ['instamart', 'swiggy instamart', 'swiggy inst'],
-  Swiggy: ['swiggy'],
-  Zomato: ['zomato'],
-  Zepto: ['zepto'],
-  Amazon: ['amazonpaygrocery', 'amazonselle'],
-}
-
-function isNonExpenseAlert(text: string, merchant: string): boolean {
-  const normalized = text.replace(/\s+/g, ' ').trim()
-  // Direct merchant UPI payee wins over any security-footer language.
-  // e.g. Kotak appends "Not you," to all payment confirmations — still a real expense.
-  if (hasDirectMerchantPayee(normalized, merchant)) return false
-  if (NON_EXPENSE_SECURITY_PATTERN.test(normalized)) return true
-  return false
+// True when the alert is a transfer to a payee that is not this merchant, i.e. the
+// merchant matched somewhere else in the message (title, bank name) and not the payee.
+function isTransferToOtherPayee(body: string, merchant: string): boolean {
+  const match = body.match(TRANSFER_PAYEE_PATTERN)
+  if (!match) return false
+  return detectMerchant(match[1]) !== merchant
 }
 
 export function parseTransactionAlert(text: string, sourceLabel: string): ParsedTransaction | null {
-  const merchant = detectMerchant(`${text}\n${sourceLabel}`)
-  if (merchant === 'Unknown') return null
-  if (isNonExpenseAlert(text, merchant)) return null
+  if (OTP_PATTERN.test(text)) return null
 
-  const amount = extractAmount(text)
+  const body = stripSecurityFooter(text.replace(/\s+/g, ' ').trim())
+  const merchant = detectMerchant(`${body}\n${sourceLabel}`)
+  if (merchant === 'Unknown') return null
+  if (isTransferToOtherPayee(body, merchant)) return null
+
+  const amount = extractAmount(body)
   if (!amount) return null
 
-  const occurredAt = parseOccurredAt(text)
-  const confidence = computeConfidence(text, occurredAt)
+  const occurredAt = parseOccurredAt(body)
+  const confidence = computeConfidence(body, occurredAt)
   const rawHash = computeRawHash(text)
 
   return {

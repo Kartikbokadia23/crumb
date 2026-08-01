@@ -2,8 +2,8 @@
 export const AMOUNT_PATTERN = /(?:Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)/gi
 
 // Datetime patterns ordered by specificity (most specific first)
-// ISO: 2024-01-15 14:30:00
-export const ISO_DATETIME = /\b(\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2})\b/
+// ISO: 2024-01-15 14:30:00, also "2026-08-01T11:22:47" and HDFC's "2026-08-01:11:22:47"
+export const ISO_DATETIME = /\b(\d{4}-\d{2}-\d{2})[\sT:](\d{2}:\d{2}:\d{2})\b/
 
 // Pluxee: 15-01-2024 14:30:00 (DD-MM-YYYY HH:MM:SS)
 export const PLUXEE_DATETIME = /\b(\d{2}-\d{2}-\d{4}\s+\d{2}:\d{2}:\d{2})\b/

@@ -147,7 +147,19 @@ describe('parseTransactionAlert', () => {
     expect(r1!.rawHash).not.toBe(r2!.rawHash)
   })
 
-  test('rejects alert with fraud/security keywords (SMS BLOCK UPI / Not you?) even if merchant name is present', () => {
+  test('hdfc-card-instamart-block-footer: parses despite "Not You? To Block+Reissue" footer', () => {
+    const result = parseTransactionAlert(
+      'Spent Rs.412 On HDFC Bank Card 2333 At PYU*Instamart Grocery On 2026-08-01:11:22:47.Not You? To Block+Reissue Call 18002586161/SMS BLOCK CC 2333 to 7308080808',
+      'HDFCBK',
+    )
+    expect(result).not.toBeNull()
+    expect(result!.merchant).toBe('Instamart')
+    expect(result!.amount).toBe('412.00')
+    expect(result!.occurredAt).toBe('2026-08-01T11:22:47')
+    expect(result!.confidence).toBe('High')
+  })
+
+  test('rejects transfer to a person even when a merchant name appears elsewhere', () => {
     const result = parseTransactionAlert(
       `Swiggy
       Sent Rs.50.00
