@@ -1,0 +1,69 @@
+{
+  "_comment": "Canonical receipt-parsing vocabulary. The TypeScript core (packages/core/src/parser) and the Android native listener (CrumbReceiptRules.kt) each hold their own copy because the listener must run without JS loaded; parity tests on both sides fail if either copy drifts from this file.",
+  "merchants": {
+    "Blinkit": ["blinkit", "blnkit", "blink commerce", "grofers"],
+    "Instamart": ["instamart", "swiggy instamart", "swiggy inst"],
+    "Swiggy": ["swiggy food", "swiggy", "bundl technologies", "bundl"],
+    "Zomato": ["zomato", "eternal"],
+    "Zepto": ["zepto", "zeptonow", "kiranakart"],
+    "Amazon": ["amazon now", "amazonnow", "amazon fresh", "amazonfresh", "amazonpaygrocery", "amazonselle"]
+  },
+  "debitTerms": [
+    "spent",
+    "debited",
+    "debit",
+    "paid",
+    "payment",
+    "sent",
+    "withdrawn",
+    "withdrawal",
+    "charged",
+    "deducted",
+    "purchase",
+    "purchased",
+    "swiped"
+  ],
+  "strongDebitTerms": [
+    "spent",
+    "debited",
+    "paid",
+    "withdrawn",
+    "withdrawal",
+    "charged",
+    "deducted",
+    "purchase",
+    "purchased",
+    "swiped"
+  ],
+  "creditTerms": ["credited", "received", "added"],
+  "nonExpenseTerms": [
+    "refund",
+    "refunded",
+    "reversal",
+    "reversed",
+    "cashback",
+    "declined",
+    "failed",
+    "unsuccessful"
+  ],
+  "otpTerms": [
+    "otp",
+    "one time password",
+    "one-time password",
+    "verification code",
+    "login code",
+    "security code",
+    "authentication code"
+  ],
+  "footerTerms": ["not you", "sms block", "to block", "to report", "call 1800"],
+  "balanceTerms": [
+    "avl lmt",
+    "avl limit",
+    "avl bal",
+    "available balance",
+    "available limit",
+    "balance",
+    "bal",
+    "limit"
+  ]
+}

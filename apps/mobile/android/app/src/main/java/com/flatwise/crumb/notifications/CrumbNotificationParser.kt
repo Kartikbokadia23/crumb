@@ -13,35 +13,32 @@ data class ParsedNotificationTransaction(
   val rawHash: String
 )
 
+/**
+ * Native counterpart of packages/core's parseTransactionAlert: the listener runs with no
+ * JS loaded, so the decisions live in CrumbReceiptRules and are mirrored on both sides.
+ */
 object CrumbNotificationParser {
-  private val amountRegex = Regex("""(?i)(?:rs\.?|inr)\s*([0-9,]+(?:\.[0-9]{1,2})?)""")
-  private val isoBankDate = Regex("""(?i)on\s+(\d{4})-(\d{2})-(\d{2})[:\s](\d{1,2}):(\d{1,2}):(\d{1,2})""")
+  private val isoBankDate = Regex("""(?i)(\d{4})-(\d{2})-(\d{2})[:T\s](\d{1,2}):(\d{1,2}):(\d{1,2})""")
   private val numericDate = Regex("""(?i)on\s+(\d{1,2})-(\d{1,2})-(\d{4})\s+(\d{1,2}):(\d{1,2}):(\d{1,2})""")
   private val slashDate = Regex("""(?i)on\s+(\d{1,2})/(\d{1,2})/(\d{2})""")
   private val namedDate = Regex("""(?i)on\s+(\d{1,2})-([a-z]{3})-(\d{2})""")
+  private val dashDate = Regex("""(?i)on\s+(\d{1,2})-(\d{1,2})-(\d{2})\b""")
   private val whitespace = Regex("""\s+""")
-  private val sentAmount = Regex("""\bsent\s+(?:rs\.?|inr)\s*[0-9,]+(?:\.[0-9]{1,2})?\b""", RegexOption.IGNORE_CASE)
-  private val fromAccount = Regex("""\bfrom\s+[^.]+(?:bank|a/c|account|acct|\*\d{2,})\b""", RegexOption.IGNORE_CASE)
-  private val toParty = Regex("""\bto\s+[a-z0-9][a-z0-9 .'-]{1,60}\b""", RegexOption.IGNORE_CASE)
-  private val transferReference = Regex("""\b(?:ref|utr|upi\s+ref|transaction\s+id)\b""", RegexOption.IGNORE_CASE)
-  private val safetyFooter = Regex("""\bnot\s+you\??\b|\bsms\s+block\s+upi\b|\bblock\s+upi\b""", RegexOption.IGNORE_CASE)
-  private val securityAlert = Regex(
-    """\b(?:otp|one[-\s]?time password|verification code|login code|security code|do not share|never share)\b""",
-    RegexOption.IGNORE_CASE
-  )
 
   fun parse(rawText: String, sourceLabel: String): ParsedNotificationTransaction? {
-    val merchant = detectMerchant(rawText) ?: return null
-    if (isNonReceiptTransfer(rawText, merchant)) return null
+    val body = CrumbReceiptRules.stripSecurityFooter(CrumbReceiptRules.normalize(rawText))
+    if (CrumbReceiptRules.isOtp(body)) return null
 
-    val amount = parseAmount(rawText) ?: return null
+    val merchant = CrumbReceiptRules.detectMerchant("$body\n$sourceLabel") ?: return null
+    if (!CrumbReceiptRules.isDebit(body)) return null
+    if (CrumbReceiptRules.isTransferToOtherPayee(body, merchant)) return null
 
-    val occurredAt = parseOccurredAt(rawText)
+    val amount = parseAmount(body) ?: return null
 
     return ParsedNotificationTransaction(
       merchant = merchant,
       amount = amount,
-      occurredAt = occurredAt,
+      occurredAt = parseOccurredAt(body),
       sourceLabel = sourceLabel.ifBlank { "Android notification" },
       confidence = "High",
       // Persistent protection is based on this one notification's normalized text.
@@ -51,52 +48,10 @@ object CrumbNotificationParser {
     )
   }
 
-  private fun detectMerchant(text: String): String? {
-    val lower = text.lowercase(Locale.US)
-    return when {
-      lower.contains("blinkit") -> "Blinkit"
-      lower.contains("instamart") || lower.contains("swiggy inst") -> "Instamart"
-      lower.contains("swiggy") -> "Swiggy"
-      lower.contains("zomato") -> "Zomato"
-      lower.contains("zepto") -> "Zepto"
-      else -> null
-    }
-  }
-
-  private fun isNonReceiptTransfer(text: String, merchant: String): Boolean {
-    val normalized = text.replace(whitespace, " ").trim()
-    if (securityAlert.containsMatchIn(normalized)) return true
-    if (!sentAmount.containsMatchIn(normalized)) return false
-    if (hasDirectMerchantPayee(normalized, merchant)) return false
-
-    val transferShape =
-      fromAccount.containsMatchIn(normalized) &&
-        toParty.containsMatchIn(normalized) &&
-        transferReference.containsMatchIn(normalized)
-
-    return transferShape || safetyFooter.containsMatchIn(normalized)
-  }
-
-  private fun hasDirectMerchantPayee(text: String, merchant: String): Boolean {
-    val aliases = when (merchant) {
-      "Blinkit" -> listOf("blinkit")
-      "Instamart" -> listOf("instamart", "swiggy instamart", "swiggy inst")
-      "Swiggy" -> listOf("swiggy")
-      "Zomato" -> listOf("zomato")
-      "Zepto" -> listOf("zepto")
-      else -> emptyList()
-    }
-
-    return aliases.any { alias ->
-      Regex("""\b(?:to|at|paid\s+to)\s+${Regex.escape(alias)}\b""", RegexOption.IGNORE_CASE)
-        .containsMatchIn(text)
-    }
-  }
-
   private fun parseAmount(text: String): String? {
-    val match = amountRegex.find(text) ?: return null
+    val raw = CrumbReceiptRules.extractAmount(text) ?: return null
     return try {
-      BigDecimal(match.groupValues[1].replace(",", "")).stripTrailingZeros().toPlainString()
+      BigDecimal(raw).stripTrailingZeros().toPlainString()
     } catch (_: NumberFormatException) {
       null
     }
@@ -123,6 +78,11 @@ object CrumbNotificationParser {
         "sep" to "09", "oct" to "10", "nov" to "11", "dec" to "12"
       )[g[2].lowercase(Locale.US)] ?: return null
       return "20${g[3]}-$month-${pad(g[1])}T00:00:00+05:30"
+    }
+    // Kotak UPI: "on 29-07-26" (DD-MM-YY, no time)
+    dashDate.find(text)?.let {
+      val g = it.groupValues
+      return "20${g[3]}-${pad(g[2])}-${pad(g[1])}T00:00:00+05:30"
     }
     return null
   }

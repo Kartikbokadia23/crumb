@@ -209,6 +209,66 @@ describe('parseTransactionAlert', () => {
     expect(result!.occurredAt).toBe('2026-07-29')
   })
 
+  test('rupee symbol and suffixed amounts parse', () => {
+    const symbol = parseTransactionAlert('₹412.00 debited via UPI to blinkit@ybl on 12/01/24', 'HDFC Bank')
+    expect(symbol!.merchant).toBe('Blinkit')
+    expect(symbol!.amount).toBe('412.00')
+
+    const suffixed = parseTransactionAlert('412 INR spent at ZEPTO on 10-Jan-24', 'ICICI')
+    expect(suffixed!.amount).toBe('412.00')
+  })
+
+  test('balance stated before the transaction amount is not taken as the spend', () => {
+    const result = parseTransactionAlert(
+      'ICICI Bank: Avl Bal Rs.5,000.00. Rs.412.00 debited for purchase at ZEPTO on 10-Jan-24',
+      'ICICI',
+    )
+    expect(result!.amount).toBe('412.00')
+  })
+
+  test('Amazon grocery descriptors parse, plain Amazon does not', () => {
+    expect(
+      parseTransactionAlert('Rs.412.00 spent on HDFC Card at AMAZON NOW on 10-Jan-24', 'HDFC')!.merchant,
+    ).toBe('Amazon')
+    expect(
+      parseTransactionAlert('Rs.412.00 spent on HDFC Card at AMAZON on 10-Jan-24', 'HDFC'),
+    ).toBeNull()
+  })
+
+  test('Zepto legal entity name (Kiranakart) parses', () => {
+    const result = parseTransactionAlert(
+      'Sent Rs.412.00 from Kotak Bank AC X0984 to kiranakart@ybl on 29-07-26',
+      'Kotak Bank',
+    )
+    expect(result!.merchant).toBe('Zepto')
+  })
+
+  test('rejects refunds, reversals and declined payments', () => {
+    expect(
+      parseTransactionAlert('Refund of Rs.412.00 for your Instamart order is credited to A/c X1234', 'HDFC'),
+    ).toBeNull()
+    expect(
+      parseTransactionAlert('Rs.412.00 has been reversed to your HDFC Card 2333 for BLINKIT', 'HDFC'),
+    ).toBeNull()
+    expect(
+      parseTransactionAlert('Your payment of Rs.412.00 at ZEPTO was declined', 'HDFC'),
+    ).toBeNull()
+  })
+
+  test('rejects credits and money received', () => {
+    expect(
+      parseTransactionAlert('Rs.412.00 credited to your A/c X1234 from SWIGGY', 'HDFC'),
+    ).toBeNull()
+    expect(
+      parseTransactionAlert('Payment of Rs.412.00 received from Zomato in A/c X1234', 'HDFC'),
+    ).toBeNull()
+  })
+
+  test('rejects promos and order updates that carry a merchant and an amount', () => {
+    expect(parseTransactionAlert('Flat Rs.150 OFF on your next Zepto order!', 'ZEPTO')).toBeNull()
+    expect(parseTransactionAlert('Your Blinkit order of Rs.412 is out for delivery', 'BLINKIT')).toBeNull()
+  })
+
   test('rejects otp and verification alerts even with merchant and amount', () => {
     expect(
       parseTransactionAlert(

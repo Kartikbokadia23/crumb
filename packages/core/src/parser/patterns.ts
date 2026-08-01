@@ -1,5 +1,7 @@
-// Amount: Rs. or INR followed by number with optional commas and decimals
-export const AMOUNT_PATTERN = /(?:Rs\.?|INR)\s*([\d,]+(?:\.\d{1,2})?)/gi
+// Amount, either prefixed ("Rs.412", "INR 412", "₹412") or suffixed ("412 INR", "412 rupees").
+// Group 1 is the prefixed form, group 2 the suffixed one.
+export const AMOUNT_PATTERN =
+  /(?:(?:\bRs\.?|\bINR|₹)\s*([\d,]+(?:\.\d{1,2})?)|\b([\d,]+(?:\.\d{1,2})?)\s*(?:Rs\.?|INR|rupees?)\b)/gi
 
 // Datetime patterns ordered by specificity (most specific first)
 // ISO: 2024-01-15 14:30:00, also "2026-08-01T11:22:47" and HDFC's "2026-08-01:11:22:47"

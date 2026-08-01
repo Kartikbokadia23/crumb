@@ -1,12 +1,14 @@
 import { Merchant } from '../models/ParsedTransaction'
 
+// Mirrors shared/parser-rules.json — see rules.ts. Card-network descriptors arrive with
+// acquirer prefixes ("PYU*Instamart Grocery"), so matching is substring, not word-bounded.
 export const MERCHANT_ALIASES: Record<Merchant, string[]> = {
-  Blinkit: ['blinkit', 'blnkit', 'grofers'],
-  Instamart: ['instamart', 'swiggy inst', 'swiggy instamart'],
+  Blinkit: ['blinkit', 'blnkit', 'blink commerce', 'grofers'],
+  Instamart: ['instamart', 'swiggy instamart', 'swiggy inst'],
   Swiggy: ['swiggy food', 'swiggy', 'bundl technologies', 'bundl'],
   Zomato: ['zomato', 'eternal'],
-  Zepto: ['zepto'],
-  Amazon: ['amazonpaygrocery', 'amazonselle'],
+  Zepto: ['zepto', 'zeptonow', 'kiranakart'],
+  Amazon: ['amazon now', 'amazonnow', 'amazon fresh', 'amazonfresh', 'amazonpaygrocery', 'amazonselle'],
   Unknown: [],
 }
 

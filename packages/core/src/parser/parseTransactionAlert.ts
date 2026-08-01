@@ -2,22 +2,32 @@ import { sha256 } from 'js-sha256'
 import { ParsedTransaction, Confidence } from '../models/ParsedTransaction'
 import { detectMerchant } from './merchants'
 import { AMOUNT_PATTERN, ISO_DATETIME, PLUXEE_DATETIME, INDIAN_DATE, SLASH_DATE, DASH_DATE } from './patterns'
+import {
+  BALANCE_TERMS,
+  CREDIT_TERMS,
+  DEBIT_TERMS,
+  FOOTER_TERMS,
+  NON_EXPENSE_TERMS,
+  OTP_TERMS,
+  STRONG_DEBIT_TERMS,
+  termsPattern,
+} from './rules'
 
 const MONTH_ABBREVS: Record<string, number> = {
   jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6,
   jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12,
 }
 
-// Only OTP / verification messages are hard-blocked. Everything else that names a
-// merchant and an amount is treated as a real expense.
-const OTP_PATTERN =
-  /\b(?:otp|one[-\s]?time\s?password|verification code|login code|security code|authentication code)\b/i
+const OTP_PATTERN = termsPattern(OTP_TERMS)
+const DEBIT_PATTERN = termsPattern(DEBIT_TERMS)
+const STRONG_DEBIT_PATTERN = termsPattern(STRONG_DEBIT_TERMS)
+const CREDIT_PATTERN = termsPattern(CREDIT_TERMS)
+const NON_EXPENSE_PATTERN = termsPattern(NON_EXPENSE_TERMS)
+const FOOTER_PATTERN = termsPattern(FOOTER_TERMS)
+const BALANCE_PATTERN = termsPattern(BALANCE_TERMS)
 
-// Banks append a fraud-report footer to genuine debit alerts ("Not you? To Block+Reissue
-// Call 1800.../SMS BLOCK CC ..."). It is noise, and its wording collides with real
-// transaction text, so everything from the footer onward is dropped before parsing.
-const SECURITY_FOOTER_PATTERN =
-  /\b(?:not\s*you\b|sms\s+block\b|to\s+block\b|to\s+report\b|call\s+1800\d+)/i
+// How far back from an amount to look for a "balance"/"limit" label.
+const BALANCE_LOOKBEHIND = 24
 
 // Payee of a transfer-style alert ("Sent Rs.50 from A/C X to <payee> on ...").
 // Captured so a transfer to someone else is not credited to a merchant that merely
@@ -88,12 +98,28 @@ function parseOccurredAt(text: string): string | null {
 function extractAmount(text: string): string | null {
   // Reset lastIndex since AMOUNT_PATTERN is global
   AMOUNT_PATTERN.lastIndex = 0
-  const match = AMOUNT_PATTERN.exec(text)
-  if (!match) return null
-  const raw = match[1].replace(/,/g, '')
-  const num = parseFloat(raw)
-  if (isNaN(num)) return null
-  return num.toFixed(2)
+  let fallback: string | null = null
+  let previousEnd = 0
+  let match: RegExpExecArray | null
+
+  while ((match = AMOUNT_PATTERN.exec(text)) !== null) {
+    // Only the words between the previous amount and this one can label it.
+    const from = Math.max(previousEnd, match.index - BALANCE_LOOKBEHIND)
+    const preceding = text.slice(from, match.index)
+    previousEnd = match.index + match[0].length
+
+    const raw = (match[1] ?? match[2]).replace(/,/g, '')
+    const num = parseFloat(raw)
+    if (isNaN(num)) continue
+    const value = num.toFixed(2)
+    if (fallback === null) fallback = value
+    // "Avl Lmt: Rs.45,000.00" / "Avl Bal Rs.5,101.00" is not what was spent.
+    if (!BALANCE_PATTERN.test(preceding)) return value
+  }
+
+  // Every amount looked like a balance — the transaction amount is still more likely
+  // to be the first one than none at all.
+  return fallback
 }
 
 function hasFullDatetime(text: string): boolean {
@@ -115,8 +141,22 @@ function computeRawHash(text: string): string {
 }
 
 function stripSecurityFooter(text: string): string {
-  const match = text.match(SECURITY_FOOTER_PATTERN)
+  const match = text.match(FOOTER_PATTERN)
   return match ? text.slice(0, match.index).trim() : text
+}
+
+/**
+ * True when the message describes money leaving the account. Requiring this keeps out
+ * promos ("Flat Rs.150 OFF on Zepto"), order updates, refunds and declined payments,
+ * all of which carry a merchant name and an amount just like a real receipt does.
+ */
+function isDebit(body: string): boolean {
+  if (NON_EXPENSE_PATTERN.test(body)) return false
+  if (!DEBIT_PATTERN.test(body)) return false
+  // "debited from A/c X and credited to <merchant>" is still a debit; "payment received"
+  // is not, so a credit alert needs unambiguous debit wording to survive.
+  if (CREDIT_PATTERN.test(body) && !STRONG_DEBIT_PATTERN.test(body)) return false
+  return true
 }
 
 // True when the alert is a transfer to a payee that is not this merchant, i.e. the
@@ -128,11 +168,12 @@ function isTransferToOtherPayee(body: string, merchant: string): boolean {
 }
 
 export function parseTransactionAlert(text: string, sourceLabel: string): ParsedTransaction | null {
-  if (OTP_PATTERN.test(text)) return null
-
   const body = stripSecurityFooter(text.replace(/\s+/g, ' ').trim())
+  if (OTP_PATTERN.test(body)) return null
+
   const merchant = detectMerchant(`${body}\n${sourceLabel}`)
   if (merchant === 'Unknown') return null
+  if (!isDebit(body)) return null
   if (isTransferToOtherPayee(body, merchant)) return null
 
   const amount = extractAmount(body)

@@ -12,28 +12,23 @@ object CrumbAndroidNotificationIngestion {
     """^\s*sent from your twilio trial account\s*-\s*""",
     RegexOption.IGNORE_CASE
   )
-  private val securityTerms = Regex(
-    """\b(?:otp|one[-\s]?time password|verification code|login code|security code|do not share|never share)\b""",
+  // Messages carries chat as well as bank SMS, so an eligible receipt must also read like
+  // it came from an account. This is the one rule the parser does not share.
+  private val accountContext = Regex(
+    """\b(?:txn|transaction|card|a/c|ac|acct|account|upi|ref|utr|wallet)\b""",
     RegexOption.IGNORE_CASE
   )
-  private val transactionContext = Regex(
-    """\b(?:spent|debited|paid|txn|transaction|card|a/c|account|upi|ref|utr)\b""",
-    RegexOption.IGNORE_CASE
-  )
-  private val amount = Regex(
-    """(?i)(?:(?:rs\.?|inr)\s*\d[\d,]*(?:\.\d{1,2})?|\d[\d,]*(?:\.\d{1,2})?\s*rupees?)"""
-  )
-  private val merchant = Regex("""(?i)\b(?:swiggy|zomato|blinkit|instamart|zepto)\b""")
 
   fun isEligibleReceiptText(text: String): Boolean {
-    val normalized = normalize(text)
-    if (normalized.isBlank() || securityTerms.containsMatchIn(normalized)) return false
+    val body = CrumbReceiptRules.stripSecurityFooter(normalize(text))
+    if (body.isBlank() || CrumbReceiptRules.isOtp(body)) return false
 
-    // Requiring all three signals prevents chat such as "20 rupees sent to Swiggy"
-    // from being treated as a bank receipt.
-    return amount.containsMatchIn(normalized) &&
-      merchant.containsMatchIn(normalized) &&
-      transactionContext.containsMatchIn(normalized)
+    // Chat such as "20 rupees sent to Swiggy" has a merchant, an amount and a loose
+    // debit word, so it also has to name an account or say plainly that money left one.
+    return CrumbReceiptRules.extractAmount(body) != null &&
+      CrumbReceiptRules.detectMerchant(body) != null &&
+      CrumbReceiptRules.isDebit(body) &&
+      (CrumbReceiptRules.hasStrongDebit(body) || accountContext.containsMatchIn(body))
   }
 
   /**

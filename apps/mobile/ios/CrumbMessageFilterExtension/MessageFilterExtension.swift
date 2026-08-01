@@ -135,9 +135,16 @@ enum CrumbKeychainStore {
   }
 }
 
-private enum CrumbSMSParser {
-  static func parse(body: String, sender: String?) -> [String: Any]? {
-    guard let merchant = merchant(in: body), let amount = amount(in: body) else { return nil }
+enum CrumbSMSParser {
+  /// Mirrors packages/core's parseTransactionAlert; the rules themselves live in
+  /// CrumbReceiptRules so all three platforms decide the same way.
+  static func parse(body rawBody: String, sender: String?) -> [String: Any]? {
+    let body = CrumbReceiptRules.stripSecurityFooter(CrumbReceiptRules.normalize(rawBody))
+    guard !CrumbReceiptRules.isOtp(body),
+          let merchant = CrumbReceiptRules.detectMerchant("\(body)\n\(sender ?? "")"),
+          CrumbReceiptRules.isDebit(body),
+          !CrumbReceiptRules.isTransferToOtherPayee(body, merchant: merchant),
+          let amount = amount(in: body) else { return nil }
     let now = ISO8601DateFormatter().string(from: Date())
     var draft: [String: Any] = [
       "id": UUID().uuidString,
@@ -145,7 +152,7 @@ private enum CrumbSMSParser {
       "amount": amount,
       "sourceLabel": sender ?? "Messages",
       "confidence": "High",
-      "rawHash": sha256(body),
+      "rawHash": sha256(rawBody),
       "status": "Pending",
       "platform": "ios",
       "ingestionSource": "sms_filter",
@@ -155,26 +162,14 @@ private enum CrumbSMSParser {
     return draft
   }
 
-  private static func merchant(in text: String) -> String? {
-    let lower = text.lowercased()
-    if lower.contains("blinkit") { return "Blinkit" }
-    if lower.contains("instamart") || lower.contains("swiggy inst") { return "Instamart" }
-    if lower.contains("swiggy") { return "Swiggy" }
-    if lower.contains("zomato") { return "Zomato" }
-    if lower.contains("zepto") { return "Zepto" }
-    return nil
-  }
-
   private static func amount(in text: String) -> String? {
-    guard let match = firstMatch(#"(?i)(?:rs\.?|inr|₹)\s*([0-9,]+(?:\.[0-9]{1,2})?)"#, in: text),
-          let raw = group(match, index: 1, text: text) else { return nil }
-    let cleaned = raw.replacingOccurrences(of: ",", with: "")
+    guard let cleaned = CrumbReceiptRules.extractAmount(text) else { return nil }
     if cleaned.hasSuffix(".00") { return String(cleaned.dropLast(3)) }
     return cleaned
   }
 
   private static func occurredAt(in text: String) -> String? {
-    if let match = firstMatch(#"(?i)on\s+(\d{4})-(\d{2})-(\d{2})[:\s](\d{1,2}):(\d{1,2}):(\d{1,2})"#, in: text),
+    if let match = firstMatch(#"(?i)(\d{4})-(\d{2})-(\d{2})[:T\s](\d{1,2}):(\d{1,2}):(\d{1,2})"#, in: text),
        let y = group(match, index: 1, text: text),
        let m = group(match, index: 2, text: text),
        let d = group(match, index: 3, text: text),
@@ -207,6 +202,14 @@ private enum CrumbSMSParser {
        let y = group(match, index: 3, text: text),
        let month = ["jan": "01", "feb": "02", "mar": "03", "apr": "04", "may": "05", "jun": "06", "jul": "07", "aug": "08", "sep": "09", "oct": "10", "nov": "11", "dec": "12"][rawMonth.lowercased()] {
       return "20\(y)-\(month)-\(pad(d))T00:00:00+05:30"
+    }
+
+    // Kotak UPI: "on 29-07-26" (DD-MM-YY, no time)
+    if let match = firstMatch(#"(?i)on\s+(\d{1,2})-(\d{1,2})-(\d{2})\b"#, in: text),
+       let d = group(match, index: 1, text: text),
+       let m = group(match, index: 2, text: text),
+       let y = group(match, index: 3, text: text) {
+      return "20\(y)-\(pad(m))-\(pad(d))T00:00:00+05:30"
     }
 
     return nil
