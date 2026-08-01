@@ -37,6 +37,14 @@ const SAMPLE_ALERTS: { label: string; text: string }[] = [
     label: 'HDFC UPI Blinkit',
     text: 'HDFC Bank: Rs.199.00 debited via UPI to Blinkit on 12/01/24. UPI Ref No: 123456789',
   },
+  {
+    label: 'HDFC card + fraud footer',
+    text: 'Spent Rs.412 On HDFC Bank Card 2333 At PYU*Instamart Grocery On 2026-08-01:11:22:47.Not You? To Block+Reissue Call 18002586161/SMS BLOCK CC 2333 to 7308080808',
+  },
+  {
+    label: 'Refund (skipped)',
+    text: 'Refund of Rs.412.00 for your Instamart order is credited to A/c X1234',
+  },
 ]
 
 // ---------------------------------------------------------------------------
@@ -224,9 +232,11 @@ export function ManualAlertTesterScreen({ navigation }: Props) {
 
           {parsed === null ? (
             <View style={styles.failCard}>
-              <Text style={styles.failText}>Could not parse — unknown merchant</Text>
+              <Text style={styles.failText}>Not a spend alert</Text>
               <Text style={styles.failHint}>
-                Crumb only recognises Blinkit, Instamart, Swiggy, Zomato, and Zepto alerts.
+                Crumb keeps a message only when it names Blinkit, Instamart, Swiggy, Zomato,
+                Zepto or Amazon grocery, has an amount, and says money left the account.
+                OTPs, refunds, credits, declined payments and offers are skipped.
               </Text>
             </View>
           ) : (
